@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>지역난방 열요금 시뮬레이터</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Malgun Gothic','맑은 고딕',Apple SD Gothic Neo,sans-serif;background:#EEF2F7;color:#1a2332;font-size:14px}
+.hdr{background:linear-gradient(135deg,#0F2D57 0%,#1A56A8 100%);color:#fff;padding:18px 32px}
+.hdr h1{font-size:19px;font-weight:800;letter-spacing:-.3px}
+.hdr p{font-size:11px;opacity:.7;margin-top:3px}
+.wrap{max-width:960px;margin:22px auto;padding:0 16px 48px}
+.card{background:#fff;border-radius:12px;padding:24px;margin-bottom:18px;box-shadow:0 1px 6px rgba(0,0,0,.07),0 0 0 1px rgba(0,0,0,.04)}
+.ch{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.cn{width:26px;height:26px;border-radius:50%;background:#0F2D57;color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ct{font-size:15px;font-weight:800;color:#0F2D57}
+.csub{font-size:11px;color:#94A3B8;margin-left:auto}
+/* Contract */
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cbtn{border:2px solid #E0E8F0;border-radius:10px;padding:20px 18px;cursor:pointer;text-align:center;background:#F8FAFC;transition:.2s;user-select:none}
+.cbtn:hover{border-color:#93C5FD;background:#EFF6FF}
+.cbtn.sel{border-color:#1A56A8;background:#EFF6FF;box-shadow:0 0 0 3px rgba(26,86,168,.12)}
+.cbtn-icon{font-size:30px;margin-bottom:8px}
+.cbtn-name{font-size:16px;font-weight:800;color:#0F2D57}
+.cbtn.sel .cbtn-name{color:#1A56A8}
+.cbtn-rates{font-size:11px;color:#64748B;margin-top:7px;line-height:1.9;text-align:left}
+.cbtn-rates span{display:inline-block;background:#E0E8F0;border-radius:4px;padding:1px 6px;font-weight:600;color:#334155}
+.cbtn.sel .cbtn-rates span{background:#BFDBFE;color:#1E40AF}
+.cbadge{display:none;background:#1A56A8;color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:20px;margin-top:8px}
+.cbtn.sel .cbadge{display:inline-block}
+/* Upload */
+.uzone{border:2px dashed #CBD5E1;border-radius:10px;padding:36px 20px;text-align:center;cursor:pointer;background:#F8FAFC;transition:.2s}
+.uzone:hover,.uzone.drag{border-color:#1A56A8;background:#EFF6FF}
+.uzone-icon{font-size:34px;margin-bottom:8px}
+.uzone-main{font-size:15px;font-weight:700;color:#334155}
+.uzone-sub{font-size:12px;color:#94A3B8;margin-top:4px}
+/* File list */
+.flist{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.fitem{display:flex;align-items:center;gap:10px;background:#F0F9FF;border:1px solid #BAE6FD;border-radius:8px;padding:9px 14px;animation:fadein .2s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.fitem-icon{font-size:16px;flex-shrink:0}
+.fitem-name{flex:1;font-size:12px;font-weight:600;color:#0369A1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.fitem-size{font-size:11px;color:#94A3B8;flex-shrink:0}
+.fitem-del{background:none;border:1px solid #FECACA;border-radius:6px;color:#DC2626;font-size:11px;font-weight:700;cursor:pointer;padding:3px 10px;transition:.2s;flex-shrink:0;font-family:inherit}
+.fitem-del:hover{background:#DC2626;color:#fff;border-color:#DC2626}
+/* Status */
+.ustatus{border-radius:8px;padding:11px 16px;margin-top:12px;font-size:13px;font-weight:600;display:none}
+.ustatus.ok{background:#F0FDF4;border:1px solid #A7F3D0;color:#166534;display:block}
+.ustatus.err{background:#FFF1F2;border:1px solid #FECDD3;color:#991B1B;display:block}
+.uinfo{background:#F0F9FF;border:1px solid #BAE6FD;border-radius:8px;padding:12px 16px;margin-top:14px}
+.uinfo li{font-size:12px;color:#0369A1;padding:2px 0;list-style:none}
+.uinfo li::before{content:"• "}
+/* Tabs */
+.tabs{display:flex;border-bottom:2px solid #E0E8F0;margin-bottom:20px}
+.tbtn{padding:9px 18px;cursor:pointer;font-size:13px;font-weight:700;color:#94A3B8;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;background:none;transition:.2s;font-family:inherit}
+.tbtn:hover:not(.on){color:#475569}
+.tbtn.on{color:#1A56A8;border-bottom-color:#1A56A8}
+.tc{display:none}.tc.on{display:block}
+/* Winner banner */
+.wbanner{border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.wbanner.gr{background:linear-gradient(135deg,#DCFCE7,#BBF7D0);border:1.5px solid #6EE7B7}
+.wbanner.bl{background:linear-gradient(135deg,#DBEAFE,#BFDBFE);border:1.5px solid #93C5FD}
+.wbanner.gy{background:linear-gradient(135deg,#F1F5F9,#E2E8F0);border:1.5px solid #CBD5E1}
+.wb-l{display:flex;align-items:center;gap:12px}
+.wb-icon{font-size:30px}
+.wb-t{font-size:14px;font-weight:800}
+.wbanner.gr .wb-t{color:#065F46}.wbanner.bl .wb-t{color:#1E3A5F}.wbanner.gy .wb-t{color:#475569}
+.wb-s{font-size:12px;margin-top:2px}
+.wbanner.gr .wb-s{color:#047857}.wbanner.bl .wb-s{color:#1E40AF}.wbanner.gy .wb-s{color:#64748B}
+.wb-amt .v{font-size:22px;font-weight:900;text-align:right}
+.wbanner.gr .wb-amt .v{color:#065F46}.wbanner.bl .wb-amt .v{color:#1E3A5F}.wbanner.gy .wb-amt .v{color:#475569}
+.wb-amt .l{font-size:11px;text-align:right;margin-top:2px}
+.wbanner.gr .wb-amt .l{color:#047857}.wbanner.bl .wb-amt .l{color:#1E40AF}
+/* Pills */
+.pill-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.mpill{border-radius:8px;padding:10px 16px;flex:1;min-width:90px;text-align:center;border:1.5px solid}
+.mpill.w{background:#F0FDF4;border-color:#A7F3D0}
+.mpill.l{background:#FFF8F8;border-color:#FECDD3}
+.mpill.e{background:#F8FAFC;border-color:#E0E8F0}
+.mpill-mo{font-size:11px;font-weight:700;color:#64748B;margin-bottom:3px}
+.mpill.w .mpill-r{font-size:12px;font-weight:800;color:#166534}
+.mpill.l .mpill-r{font-size:12px;font-weight:800;color:#991B1B}
+.mpill.e .mpill-r{font-size:12px;font-weight:800;color:#64748B}
+.mpill-d{font-size:11px;color:#94A3B8;margin-top:2px}
+/* VS card */
+.vs-row{display:grid;grid-template-columns:1fr auto 1fr;margin-bottom:20px;border-radius:10px;overflow:hidden;border:1.5px solid #E0E8F0}
+.vs-c{padding:18px 20px;text-align:center;position:relative}
+.vs-c.win{background:#F0FDF4}.vs-c.los{background:#FFF8F8}
+.vs-c.win::after{content:"✓ 유리";position:absolute;top:10px;right:10px;background:#16A34A;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px}
+.vs-c.los::after{content:"✗ 불리";position:absolute;top:10px;right:10px;background:#DC2626;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px}
+.vs-div{background:#F0F4F8;display:flex;align-items:center;justify-content:center;padding:0 12px;font-size:11px;font-weight:800;color:#94A3B8;writing-mode:vertical-rl;letter-spacing:2px}
+.vs-type{font-size:11px;font-weight:700;color:#64748B;margin-bottom:6px}
+.vs-val{font-size:20px;font-weight:900}
+.vs-c.win .vs-val{color:#166534}.vs-c.los .vs-val{color:#991B1B}
+.vs-rate{font-size:11px;color:#94A3B8;margin-top:4px}
+/* Table */
+table{width:100%;border-collapse:collapse}
+thead th{background:#0F2D57;color:#fff;padding:10px 12px;font-size:12px;font-weight:700;text-align:center;white-space:nowrap}
+thead th:first-child{border-radius:6px 0 0 0}
+thead th:last-child{border-radius:0 6px 0 0}
+thead th.th-t{background:#15803D}
+thead th.th-s{background:#1D4ED8}
+tbody td{padding:10px 12px;font-size:13px;text-align:right;border-bottom:1px solid #F0F4F8}
+tbody td:first-child{text-align:left;font-weight:700;color:#334155}
+tbody td.tw{background:#F0FDF4;color:#166534;font-weight:700}
+tbody td.tl{background:#FFF8F8;color:#991B1B}
+tbody tr:hover td:not(.tw):not(.tl){background:#F8FAFC}
+tbody tr.ttr td{background:#EEF2F7!important;font-weight:800;border-top:2px solid #DDE3EC}
+tbody tr.ttr td.tw{background:#DCFCE7!important}
+tbody tr.ttr td.tl{background:#FECDD3!important}
+.notice{font-size:11px;color:#94A3B8;margin-top:10px;text-align:right;font-style:italic}
+.pbtn{background:#0F2D57;color:#fff;border:none;padding:11px 22px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:7px;transition:.2s;font-family:inherit}
+.pbtn:hover{background:#1A56A8}
+/* Loading */
+.loverlay{display:none;position:fixed;inset:0;background:rgba(15,45,87,.45);z-index:100;align-items:center;justify-content:center}
+.lbox{background:#fff;border-radius:12px;padding:32px 40px;text-align:center}
+.spin{width:36px;height:36px;border:4px solid #BFDBFE;border-top-color:#1A56A8;border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 12px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.print-only{display:none}
+@media print{
+  body{background:#fff!important}
+  .card{box-shadow:none!important;border:1px solid #ddd!important;margin-bottom:10px!important;break-inside:avoid}
+  .no-print{display:none!important}
+  .hdr{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .wbanner,.mpill,.vs-c,.tw,.tl,.ttr td,thead th{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .print-only{display:block;padding:8px 24px;background:#F8FAFC;border-bottom:1px solid #ddd;font-size:12px;color:#475569;margin-bottom:10px}
+}
+</style>
+</head>
+<body>
+
+<div class="loverlay" id="lov">
+  <div class="lbox"><div class="spin"></div><div style="font-size:14px;font-weight:700;color:#0F2D57">파일 분석 중...</div></div>
+</div>
+
+<div class="hdr">
+  <h1>🏢 지역난방 열요금 시뮬레이터</h1>
+  <p>업무용 · 공공용 사용요금 비교 분석 | 동절기(12월~2월) 전용</p>
+</div>
+
+<div class="print-only" id="ph"></div>
+
+<div class="wrap">
+
+  <!-- STEP 1 -->
+  <div class="card no-print">
+    <div class="ch"><div class="cn">1</div><div class="ct">계약종별 선택</div></div>
+    <div class="cgrid">
+      <div class="cbtn sel" id="btn-biz" onclick="selContract('biz')">
+        <div class="cbtn-icon">🏢</div><div class="cbtn-name">업무용</div>
+        <div class="cbtn-rates">· 단일요금: <span>145.82원/Mcal</span><br>· 수요관리시간대: <span>167.71원/Mcal</span><br>· 수요관리 이외: <span>138.53원/Mcal</span></div>
+        <div class="cbadge">✓ 선택됨</div>
+      </div>
+      <div class="cbtn" id="btn-pub" onclick="selContract('pub')">
+        <div class="cbtn-icon">🏛️</div><div class="cbtn-name">공공용</div>
+        <div class="cbtn-rates">· 단일요금: <span>127.34원/Mcal</span><br>· 수요관리시간대: <span>146.43원/Mcal</span><br>· 수요관리 이외: <span>120.99원/Mcal</span></div>
+        <div class="cbadge">✓ 선택됨</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="card no-print">
+    <div class="ch"><div class="cn">2</div><div class="ct">엑셀 파일 업로드</div><div class="csub">여러 파일 동시 업로드 가능</div></div>
+    <div class="uzone" id="uzone">
+      <div class="uzone-icon">📊</div>
+      <div class="uzone-main">클릭하거나 파일을 여기에 드래그하세요</div>
+      <div class="uzone-sub">.xlsx, .xls 지원 · 여러 파일 한번에 선택 가능 · 열지침량(Gcal) 기준 자동 계산</div>
+    </div>
+    <div class="flist" id="flist"></div>
+    <div class="ustatus" id="ust"></div>
+    <ul class="uinfo">
+      <li>필수 컬럼: 날짜(YYYYMMDD), 시간(N시), 열지침량(Gcal)</li>
+      <li>시간별 사용량(Mcal) = (현재 열지침량 − 이전 시간 열지침량) × 1,000</li>
+      <li>수요관리시간대(07:00~10:00) 자동 분류 | 중복 시간대 자동 제거</li>
+    </ul>
+    <input type="file" id="fi" accept=".xlsx,.xls" multiple style="display:none">
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="card" id="rcard" style="display:none">
+    <div class="ch"><div class="cn">3</div><div class="ct">요금 비교 결과</div><div class="csub" id="rcsub">업무용 기준</div></div>
+    <div class="tabs no-print">
+      <button class="tbtn on" onclick="swTab(this,'m')">📅 월별</button>
+      <button class="tbtn" onclick="swTab(this,'y')">📆 연도별</button>
+      <button class="tbtn" onclick="swTab(this,'a')">📊 총합</button>
+    </div>
+    <div class="tc on" id="tc-m"></div>
+    <div class="tc" id="tc-y"></div>
+    <div class="tc" id="tc-a"></div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="card no-print" id="pcard" style="display:none">
+    <div class="ch"><div class="cn">4</div><div class="ct">결과 인쇄</div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div style="font-size:12px;color:#64748B;line-height:1.8">현재 선택된 탭(월별/연도별/총합)의 결론 및 비교표가 출력됩니다.<br>기본요금 제외 안내, 계약종별 정보 포함</div>
+      <button class="pbtn" onclick="doPrint()">🖨️ 인쇄하기</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const RATES={
+  biz:{single:145.82,demand:167.71,other:138.53,label:'업무용',basic:396.79},
+  pub:{single:127.34,demand:146.43,other:120.99,label:'공공용',basic:361.98}
+};
+let cType='biz', mData=[], sData=[], uploadedFiles=[];
+
+const fmt=n=>Math.round(n).toLocaleString('ko-KR')+'원';
+const fmtN=n=>Math.round(n).toLocaleString('ko-KR');
+const pct=(a,b)=>b>0?(a/b*100).toFixed(1)+'%':'0%';
+const fmtSize=b=>b<1024*1024?(b/1024).toFixed(1)+'KB':(b/1024/1024).toFixed(1)+'MB';
+
+function getSeason(y,m){
+  return m===12?{k:`${y}${y+1}`,lb:`${y}–${String(y+1).slice(-2)}`}:{k:`${y-1}${y}`,lb:`${y-1}–${String(y).slice(-2)}`};
+}
+function getML(y,m){return `${y}년 ${m}월`;}
+function calcFees(tot,dem,oth){
+  const r=RATES[cType],s=tot*r.single,t=dem*r.demand+oth*r.other,d=s-t;
+  return{s,t,sav:Math.abs(d),w:d>0.01?'t':d<-0.01?'s':'e'};
+}
+function nText(){return `※ 기본요금(계약용량 1Mcal/h당 ${RATES[cType].basic}원)은 요금제와 무관하게 동일하므로 비교에서 제외합니다`;}
+
+// Parse one file's raw records (no usage calculation yet)
+function parseFileRecords(buf){
+  const wb=XLSX.read(new Uint8Array(buf),{type:'array'});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null});
+  if(!rows.length)return [];
+
+  // 헤더 행에서 컬럼 위치를 이름으로 찾기
+  const hdrs=(rows[0]||[]).map(h=>String(h||'').trim());
+  const di=hdrs.findIndex(h=>h.includes('날짜'));
+  const ti=hdrs.findIndex(h=>h.includes('시간'));
+  const hi=hdrs.findIndex(h=>h.includes('열지침량'));
+
+  if(di===-1||ti===-1||hi===-1){
+    const missing=[];
+    if(di===-1)missing.push('날짜');
+    if(ti===-1)missing.push('시간');
+    if(hi===-1)missing.push('열지침량');
+    throw new Error(`필수 헤더를 찾을 수 없습니다: [${missing.join(', ')}] — 열 순서가 바뀌어도 헤더 이름만 유지되면 정상 작동합니다.`);
+  }
+
+  const recs=[];
+  for(let i=1;i<rows.length;i++){
+    const row=rows[i];
+    if(!row)continue;
+    const ds=String(row[di]||'').replace(/\D/g,'');
+    if(ds.length!==8)continue;
+    const y=+ds.slice(0,4),mo=+ds.slice(4,6),d=+ds.slice(6,8);
+    if(![12,1,2].includes(mo))continue; // 동절기(12·1·2월) 외 자동 제외
+    const hm=String(row[ti]||'').match(/(\d+)/);
+    if(!hm)continue;
+    const h=+hm[1];
+    if(h<0||h>23)continue;
+    const v=parseFloat(row[hi]);
+    if(isNaN(v))continue;
+    recs.push({y,mo,d,h,v,ds});
+  }
+  return recs;
+}
+
+function processAllFiles(){
+  if(!uploadedFiles.length){clearResults();return;}
+
+  // Combine all records
+  let all=[];
+  for(const f of uploadedFiles){
+    try{all=all.concat(parseFileRecords(f.buf));}
+    catch(e){console.warn('parse error',f.name,e);}
+  }
+  if(!all.length){
+    showErr('유효한 12~2월 데이터를 찾을 수 없습니다.');
+    clearResults();return;
+  }
+
+  // Deduplicate by date-hour (keep first occurrence)
+  const seen=new Set();
+  all=all.filter(r=>{
+    const k=`${r.ds}-${r.h}`;
+    if(seen.has(k))return false;
+    seen.add(k);return true;
+  });
+
+  // Sort chronologically
+  all.sort((a,b)=>+a.ds*100+a.h-(+b.ds*100+b.h));
+
+  // Calculate hourly usage (Gcal diff × 1000 = Mcal)
+  for(let i=0;i<all.length;i++){
+    if(i===0){all[i].mc=0;continue;}
+    const p=all[i-1],c=all[i];
+    const pd=new Date(p.y,p.mo-1,p.d,p.h),cd=new Date(c.y,c.mo-1,c.d,c.h);
+    all[i].mc=(cd-pd)===3600000?Math.max(0,(c.v-p.v)*1000):0;
+  }
+
+  // Aggregate by month
+  const mMap={};
+  for(const r of all){
+    if(!r.mc)continue;
+    const k=`${r.y}-${String(r.mo).padStart(2,'0')}`;
+    if(!mMap[k])mMap[k]={y:r.y,mo:r.mo,k,tot:0,dem:0};
+    mMap[k].tot+=r.mc;
+    if(r.h>=7&&r.h<=9)mMap[k].dem+=r.mc;
+  }
+  mData=Object.values(mMap).sort((a,b)=>a.k.localeCompare(b.k)).map(m=>({...m,oth:m.tot-m.dem}));
+
+  if(!mData.length){showErr('사용량을 계산할 수 없습니다. 연속된 시간별 데이터를 확인해주세요.');clearResults();return;}
+
+  // Aggregate by season
+  const sMap={};
+  for(const m of mData){
+    const s=getSeason(m.y,m.mo);
+    if(!sMap[s.k])sMap[s.k]={k:s.k,lb:s.lb,tot:0,dem:0,mos:[]};
+    sMap[s.k].tot+=m.tot;sMap[s.k].dem+=m.dem;sMap[s.k].mos.push(m);
+  }
+  sData=Object.values(sMap).sort((a,b)=>a.k.localeCompare(b.k)).map(s=>({...s,oth:s.tot-s.dem}));
+
+  renderAll();
+
+  const st=document.getElementById('ust');
+  st.className='ustatus ok';
+  st.innerHTML=`✅ 총 ${uploadedFiles.length}개 파일 분석 완료 — ${mData.length}개월, ${sData.length}개 동절기 데이터`;
+}
+
+function clearResults(){
+  mData=[];sData=[];
+  document.getElementById('rcard').style.display='none';
+  document.getElementById('pcard').style.display='none';
+  if(!uploadedFiles.length){
+    const st=document.getElementById('ust');
+    st.className='ustatus';st.innerHTML='';
+  }
+}
+
+function showErr(msg){
+  const st=document.getElementById('ust');
+  st.className='ustatus err';st.innerHTML='❌ '+msg;
+}
+
+// File list UI
+function updateFileList(){
+  const el=document.getElementById('flist');
+  if(!uploadedFiles.length){
+    el.innerHTML='';
+    document.querySelector('#uzone .uzone-main').textContent='클릭하거나 파일을 여기에 드래그하세요';
+    document.querySelector('#uzone .uzone-sub').textContent='.xlsx, .xls 지원 · 여러 파일 한번에 선택 가능';
+    return;
+  }
+  el.innerHTML=uploadedFiles.map((f,i)=>`
+    <div class="fitem">
+      <span class="fitem-icon">📊</span>
+      <span class="fitem-name">${f.name}</span>
+      <span class="fitem-size">${fmtSize(f.size)}</span>
+      <button class="fitem-del" onclick="removeFile(${i})">✕ 삭제</button>
+    </div>`).join('');
+  document.querySelector('#uzone .uzone-main').textContent='+ 파일 추가';
+  document.querySelector('#uzone .uzone-sub').textContent=`현재 ${uploadedFiles.length}개 파일 업로드됨 · 클릭 또는 드래그로 추가 가능`;
+}
+
+function addFiles(fileList){
+  const toAdd=Array.from(fileList).filter(f=>/\.(xlsx|xls)$/i.test(f.name));
+  const invalid=Array.from(fileList).filter(f=>!/\.(xlsx|xls)$/i.test(f.name));
+  if(invalid.length){showErr('.xlsx 또는 .xls 파일만 업로드 가능합니다.');return;}
+  if(!toAdd.length)return;
+
+  document.getElementById('lov').style.display='flex';
+  let pending=toAdd.length;
+
+  toAdd.forEach(file=>{
+    if(uploadedFiles.some(f=>f.name===file.name)){
+      pending--;if(pending===0)finishAdd();return;
+    }
+    const rd=new FileReader();
+    rd.onload=e=>{
+      uploadedFiles.push({name:file.name,buf:e.target.result,size:file.size});
+      pending--;if(pending===0)finishAdd();
+    };
+    rd.onerror=()=>{pending--;if(pending===0)finishAdd();};
+    rd.readAsArrayBuffer(file);
+  });
+
+  function finishAdd(){
+    document.getElementById('lov').style.display='none';
+    updateFileList();
+    processAllFiles();
+    if(mData.length)setTimeout(()=>document.getElementById('rcard').scrollIntoView({behavior:'smooth',block:'start'}),200);
+  }
+}
+
+function removeFile(i){
+  uploadedFiles.splice(i,1);
+  updateFileList();
+  if(uploadedFiles.length)processAllFiles();
+  else clearResults();
+}
+
+// Rendering
+function banner(f,title,sub){
+  const isT=f.w==='t',isTie=f.w==='e';
+  if(isTie)return `<div class="wbanner gy"><div class="wb-l"><div class="wb-icon">🤝</div><div><div class="wb-t">${title} — 두 요금제의 금액이 동일합니다</div><div class="wb-s">${sub}</div></div></div><div class="wb-amt"><div class="v">차액 없음</div></div></div>`;
+  const cls=isT?'gr':'bl',wl=isT?'시간대별 차등요금':'단일요금';
+  const cmp=isT?'단일요금 대비':'시간대별 대비';
+  return `<div class="wbanner ${cls}"><div class="wb-l"><div class="wb-icon">🏆</div><div><div class="wb-t">${title} — ${wl}이 더 유리합니다</div><div class="wb-s">${sub}</div></div></div><div class="wb-amt"><div class="v">${fmt(f.sav)} 절감</div><div class="l">${cmp} (기본요금 동일하여 제외)</div></div></div>`;
+}
+
+function vsCard(f){
+  const r=RATES[cType],isT=f.w==='t';
+  return `<div class="vs-row">
+    <div class="vs-c ${isT?'los':'win'}"><div class="vs-type">단일요금</div><div class="vs-val">${fmt(f.s)}</div><div class="vs-rate">${r.single}원/Mcal 일괄 적용</div></div>
+    <div class="vs-div">VS</div>
+    <div class="vs-c ${isT?'win':'los'}"><div class="vs-type">시간대별 차등요금</div><div class="vs-val">${fmt(f.t)}</div><div class="vs-rate">수요관리 ${r.demand} / 기타 ${r.other}원</div></div>
+  </div>`;
+}
+
+function savCell(f){
+  const a=f.w==='t'?'▼':f.w==='s'?'▲':'—',c=f.w==='t'?'#166534':f.w==='s'?'#991B1B':'#94A3B8';
+  return `<td style="text-align:center;font-weight:700;color:${c}">${a} ${fmt(f.sav)}</td>`;
+}
+function tdC(f,type){return f.w===type?'tw':'tl';}
+function thC(ov,type){return ov.w===type?(type==='t'?'th-t':'th-s'):'';}
+function thL(ov,type,base){return ov.w===type?base+' ✓':base;}
+
+function renderMonthly(){
+  const T=mData.reduce((s,m)=>s+m.tot,0),D=mData.reduce((s,m)=>s+m.dem,0),O=T-D;
+  const ov=calcFees(T,D,O);
+  const pills=mData.map(m=>{
+    const f=calcFees(m.tot,m.dem,m.oth);
+    const cls=f.w==='t'?'w':f.w==='s'?'l':'e';
+    const res=f.w==='t'?'✓ 시간대별 유리':f.w==='s'?'✓ 단일요금 유리':'— 차액 없음';
+    return `<div class="mpill ${cls}"><div class="mpill-mo">${getML(m.y,m.mo)}</div><div class="mpill-r">${res}</div><div class="mpill-d">${fmt(f.sav)}</div></div>`;
+  }).join('');
+  const rows=mData.map(m=>{
+    const f=calcFees(m.tot,m.dem,m.oth);
+    return `<tr><td>${getML(m.y,m.mo)}</td><td>${fmtN(Math.round(m.tot))}</td>
+      <td style="text-align:center">${fmtN(Math.round(m.dem))} (${pct(m.dem,m.tot)})</td>
+      <td class="${tdC(f,'s')}">${fmt(f.s)}</td><td class="${tdC(f,'t')}">${fmt(f.t)}</td>${savCell(f)}</tr>`;
+  }).join('');
+  const tf=calcFees(T,D,O);
+  const tot=`<tr class="ttr"><td>합 계</td><td>${fmtN(Math.round(T))}</td>
+    <td style="text-align:center">${fmtN(Math.round(D))} (${pct(D,T)})</td>
+    <td class="${tdC(tf,'s')}">${fmt(tf.s)}</td><td class="${tdC(tf,'t')}">${fmt(tf.t)}</td>${savCell(tf)}</tr>`;
+  document.getElementById('tc-m').innerHTML=`
+    ${banner(ov,'전체 동절기','수요관리시간대(07:00~10:00) 기준 | 기본요금 제외')}
+    <div class="pill-row">${pills}</div>
+    <table><thead><tr><th>구분</th><th>총사용량(Mcal)</th><th>수요관리 시간대</th>
+      <th class="${thC(ov,'s')}">${thL(ov,'s','단일요금')}</th>
+      <th class="${thC(ov,'t')}">${thL(ov,'t','시간대별 차등요금')}</th>
+      <th>절감액</th></tr></thead>
+    <tbody>${rows}${tot}</tbody></table>
+    <div class="notice">${nText()}</div>`;
+}
+
+function renderYearly(){
+  const T=sData.reduce((s,d)=>s+d.tot,0),D=sData.reduce((s,d)=>s+d.dem,0),O=T-D;
+  const ov=calcFees(T,D,O);
+  const rows=sData.map(s=>{
+    const f=calcFees(s.tot,s.dem,s.oth);
+    return `<tr><td>${s.lb} 동절기</td><td>${fmtN(Math.round(s.tot))}</td>
+      <td style="text-align:center">${fmtN(Math.round(s.dem))} (${pct(s.dem,s.tot)})</td>
+      <td class="${tdC(f,'s')}">${fmt(f.s)}</td><td class="${tdC(f,'t')}">${fmt(f.t)}</td>${savCell(f)}</tr>`;
+  }).join('');
+  let totR='';
+  if(sData.length>1){
+    const tf=calcFees(T,D,O);
+    totR=`<tr class="ttr"><td>전체 합계</td><td>${fmtN(Math.round(T))}</td>
+      <td style="text-align:center">${fmtN(Math.round(D))} (${pct(D,T)})</td>
+      <td class="${tdC(tf,'s')}">${fmt(tf.s)}</td><td class="${tdC(tf,'t')}">${fmt(tf.t)}</td>${savCell(tf)}</tr>`;
+  }
+  const f1=sData.length===1?calcFees(sData[0].tot,sData[0].dem,sData[0].oth):null;
+  document.getElementById('tc-y').innerHTML=`
+    ${banner(ov,'동절기 합산','12월 + 1월 + 2월 사용요금 합계 | 기본요금 제외')}
+    ${f1?vsCard(f1):''}
+    <table><thead><tr><th>동절기</th><th>총사용량(Mcal)</th><th>수요관리 시간대</th>
+      <th class="${thC(ov,'s')}">${thL(ov,'s','단일요금')}</th>
+      <th class="${thC(ov,'t')}">${thL(ov,'t','시간대별 차등요금')}</th>
+      <th>절감액</th></tr></thead>
+    <tbody>${rows}${totR}</tbody></table>
+    <div class="notice">${nText()}</div>`;
+}
+
+function renderTotal(){
+  const T=sData.reduce((s,d)=>s+d.tot,0),D=sData.reduce((s,d)=>s+d.dem,0),O=T-D;
+  const ov=calcFees(T,D,O);
+  let tb='';
+  for(const s of sData){
+    tb+=s.mos.map((m,i)=>{
+      const f=calcFees(m.tot,m.dem,m.oth);
+      const sc=i===0?`<td rowspan="${s.mos.length+1}" style="text-align:center;vertical-align:middle;font-weight:800;color:#0F2D57">${s.lb}</td>`:'';
+      return `<tr>${sc}<td>${m.mo}월</td><td>${fmtN(Math.round(m.tot))}</td>
+        <td style="text-align:center">${fmtN(Math.round(m.dem))}</td>
+        <td class="${tdC(f,'s')}">${fmt(f.s)}</td><td class="${tdC(f,'t')}">${fmt(f.t)}</td>${savCell(f)}</tr>`;
+    }).join('');
+    const sf=calcFees(s.tot,s.dem,s.oth);
+    tb+=`<tr class="ttr"><td>소 계</td><td>${fmtN(Math.round(s.tot))}</td>
+      <td style="text-align:center">${fmtN(Math.round(s.dem))}</td>
+      <td class="${tdC(sf,'s')}">${fmt(sf.s)}</td><td class="${tdC(sf,'t')}">${fmt(sf.t)}</td>${savCell(sf)}</tr>`;
+  }
+  document.getElementById('tc-a').innerHTML=`
+    ${banner(ov,'전체 합계','모든 동절기 데이터 기준 | 기본요금 제외')}
+    <table><thead><tr><th>동절기</th><th>월</th><th>총사용량(Mcal)</th><th>수요관리 시간대</th>
+      <th class="${thC(ov,'s')}">${thL(ov,'s','단일요금')}</th>
+      <th class="${thC(ov,'t')}">${thL(ov,'t','시간대별 차등요금')}</th>
+      <th>절감액</th></tr></thead>
+    <tbody>${tb}</tbody></table>
+    <div class="notice">${nText()}</div>`;
+}
+
+function renderAll(){
+  document.getElementById('rcsub').textContent=`${RATES[cType].label} 기준`;
+  renderMonthly();renderYearly();renderTotal();
+  document.getElementById('rcard').style.display='';
+  document.getElementById('pcard').style.display='';
+}
+
+function selContract(t){
+  cType=t;
+  document.getElementById('btn-biz').classList.toggle('sel',t==='biz');
+  document.getElementById('btn-pub').classList.toggle('sel',t==='pub');
+  if(mData.length)renderAll();
+}
+
+function swTab(el,id){
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.tc').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');document.getElementById('tc-'+id).classList.add('on');
+}
+
+function doPrint(){
+  document.getElementById('ph').textContent=`지역난방 열요금 비교 분석 결과 | 계약종별: ${RATES[cType].label} | 출력일: ${new Date().toLocaleDateString('ko-KR')}`;
+  window.print();
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const uz=document.getElementById('uzone'),fi=document.getElementById('fi');
+  uz.addEventListener('click',()=>fi.click());
+  uz.addEventListener('dragover',e=>{e.preventDefault();uz.classList.add('drag')});
+  uz.addEventListener('dragleave',()=>uz.classList.remove('drag'));
+  uz.addEventListener('drop',e=>{
+    e.preventDefault();uz.classList.remove('drag');
+    addFiles(e.dataTransfer.files);
+  });
+  fi.addEventListener('change',e=>{
+    if(e.target.files.length)addFiles(e.target.files);
+    fi.value='';
+  });
+});
+</script>
+</body>
+</html>
