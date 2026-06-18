@@ -17,12 +17,10 @@ body{font-family:'Malgun Gothic','맑은 고딕',Apple SD Gothic Neo,sans-serif;
 .cn{width:26px;height:26px;border-radius:50%;background:#0F2D57;color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .ct{font-size:15px;font-weight:800;color:#0F2D57}
 .csub{font-size:11px;color:#94A3B8;margin-left:auto}
-/* Gear & badge */
 .gear-btn{background:none;border:1px solid #E0E8F0;cursor:pointer;font-size:15px;padding:5px 8px;border-radius:8px;transition:.25s;line-height:1;margin-left:auto;flex-shrink:0}
 .gear-btn:hover{background:#EEF2F7;border-color:#CBD5E1;transform:rotate(45deg)}
 .mod-badge{display:none;background:#FEF3C7;border:1px solid #FCD34D;color:#92400E;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0}
 .mod-badge.on{display:inline-flex;align-items:center;gap:3px}
-/* Contract */
 .cgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .cbtn{border:2px solid #E0E8F0;border-radius:10px;padding:20px 18px;cursor:pointer;text-align:center;background:#F8FAFC;transition:.2s;user-select:none}
 .cbtn:hover{border-color:#93C5FD;background:#EFF6FF}
@@ -35,7 +33,6 @@ body{font-family:'Malgun Gothic','맑은 고딕',Apple SD Gothic Neo,sans-serif;
 .cbtn.sel .cbtn-rates span{background:#BFDBFE;color:#1E40AF}
 .cbadge{display:none;background:#1A56A8;color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:20px;margin-top:8px}
 .cbtn.sel .cbadge{display:inline-block}
-/* Upload */
 .uzone{border:2px dashed #CBD5E1;border-radius:10px;padding:36px 20px;text-align:center;cursor:pointer;background:#F8FAFC;transition:.2s}
 .uzone:hover,.uzone.drag{border-color:#1A56A8;background:#EFF6FF}
 .uzone-icon{font-size:34px;margin-bottom:8px}
@@ -55,13 +52,11 @@ body{font-family:'Malgun Gothic','맑은 고딕',Apple SD Gothic Neo,sans-serif;
 .uinfo{background:#F0F9FF;border:1px solid #BAE6FD;border-radius:8px;padding:12px 16px;margin-top:14px}
 .uinfo li{font-size:12px;color:#0369A1;padding:2px 0;list-style:none}
 .uinfo li::before{content:"• "}
-/* Tabs */
 .tabs{display:flex;border-bottom:2px solid #E0E8F0;margin-bottom:20px}
 .tbtn{padding:9px 18px;cursor:pointer;font-size:13px;font-weight:700;color:#94A3B8;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;background:none;transition:.2s;font-family:inherit}
 .tbtn:hover:not(.on){color:#475569}
 .tbtn.on{color:#1A56A8;border-bottom-color:#1A56A8}
 .tc{display:none}.tc.on{display:block}
-/* Winner banner */
 .wbanner{border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
 .wbanner.gr{background:linear-gradient(135deg,#DCFCE7,#BBF7D0);border:1.5px solid #6EE7B7}
 .wbanner.bl{background:linear-gradient(135deg,#DBEAFE,#BFDBFE);border:1.5px solid #93C5FD}
@@ -76,7 +71,6 @@ body{font-family:'Malgun Gothic','맑은 고딕',Apple SD Gothic Neo,sans-serif;
 .wbanner.gr .wb-amt .v{color:#065F46}.wbanner.bl .wb-amt .v{color:#1E3A5F}.wbanner.gy .wb-amt .v{color:#475569}
 .wb-amt .l{font-size:11px;text-align:right;margin-top:2px}
 .wbanner.gr .wb-amt .l{color:#047857}.wbanner.bl .wb-amt .l{color:#1E40AF}
-/* Pills */
 .pill-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
 .mpill{border-radius:8px;padding:10px 16px;flex:1;min-width:90px;text-align:center;border:1.5px solid}
 .mpill.w{background:#F0FDF4;border-color:#A7F3D0}
@@ -87,7 +81,6 @@ body{font-family:'Malgun Gothic','맑은 고딕',Apple SD Gothic Neo,sans-serif;
 .mpill.l .mpill-r{font-size:12px;font-weight:800;color:#991B1B}
 .mpill.e .mpill-r{font-size:12px;font-weight:800;color:#64748B}
 .mpill-d{font-size:11px;color:#94A3B8;margin-top:2px}
-/* VS card */
 .vs-row{display:grid;grid-template-columns:1fr auto 1fr;margin-bottom:20px;border-radius:10px;overflow:hidden;border:1.5px solid #E0E8F0}
 .vs-c{padding:18px 20px;text-align:center;position:relative}
 .vs-c.win{background:#F0FDF4}.vs-c.los{background:#FFF8F8}
@@ -98,7 +91,6 @@ body{font-family:'Malgun Gothic','맑은 고딕',Apple SD Gothic Neo,sans-serif;
 .vs-val{font-size:20px;font-weight:900}
 .vs-c.win .vs-val{color:#166534}.vs-c.los .vs-val{color:#991B1B}
 .vs-rate{font-size:11px;color:#94A3B8;margin-top:4px}
-/* Table */
 table{width:100%;border-collapse:collapse}
 thead th{background:#0F2D57;color:#fff;padding:10px 12px;font-size:12px;font-weight:700;text-align:center;white-space:nowrap}
 thead th:first-child{border-radius:6px 0 0 0}
@@ -116,7 +108,6 @@ tbody tr.ttr td.tl{background:#FECDD3!important}
 .notice{font-size:11px;color:#94A3B8;margin-top:10px;text-align:right;font-style:italic}
 .pbtn{background:#0F2D57;color:#fff;border:none;padding:11px 22px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:7px;transition:.2s;font-family:inherit}
 .pbtn:hover{background:#1A56A8}
-/* Settings modal */
 .moverlay{display:none;position:fixed;inset:0;background:rgba(15,45,87,.5);z-index:200;align-items:center;justify-content:center;padding:16px}
 .moverlay.open{display:flex}
 .mbox{background:#fff;border-radius:14px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.2)}
@@ -126,7 +117,7 @@ tbody tr.ttr td.tl{background:#FECDD3!important}
 .mhdr-x:hover{background:rgba(255,255,255,.3)}
 .mbody{padding:22px}
 .msec{margin-bottom:20px}
-.msec-t{font-size:13px;font-weight:800;color:#475569;margin-bottom:10px;padding-bottom:6px;border-bottom:1.5px solid #F0F4F8;display:flex;align-items:center;gap:6px}
+.msec-t{font-size:13px;font-weight:800;color:#475569;margin-bottom:10px;padding-bottom:6px;border-bottom:1.5px solid #F0F4F8}
 .rgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .rfield label{font-size:11px;color:#64748B;font-weight:700;margin-bottom:4px;display:block}
 .rfield input{width:100%;border:1.5px solid #E0E8F0;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;color:#1a2332;transition:.2s;text-align:right}
@@ -140,7 +131,6 @@ tbody tr.ttr td.tl{background:#FECDD3!important}
 .btn-can:hover{background:#EEF2F7}
 .btn-sav{background:#0F2D57;color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;transition:.2s}
 .btn-sav:hover{background:#1A56A8}
-/* Loading */
 .loverlay{display:none;position:fixed;inset:0;background:rgba(15,45,87,.45);z-index:100;align-items:center;justify-content:center}
 .lbox{background:#fff;border-radius:12px;padding:32px 40px;text-align:center}
 .spin{width:36px;height:36px;border:4px solid #BFDBFE;border-top-color:#1A56A8;border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 12px}
@@ -162,7 +152,6 @@ tbody tr.ttr td.tl{background:#FECDD3!important}
   <div class="lbox"><div class="spin"></div><div style="font-size:14px;font-weight:700;color:#0F2D57">파일 분석 중...</div></div>
 </div>
 
-<!-- Settings modal -->
 <div class="moverlay" id="moverlay" onclick="closeOnOverlay(event)">
   <div class="mbox">
     <div class="mhdr">
@@ -208,7 +197,6 @@ tbody tr.ttr td.tl{background:#FECDD3!important}
 
 <div class="wrap">
 
-  <!-- STEP 1 -->
   <div class="card no-print">
     <div class="ch">
       <div class="cn">1</div>
@@ -230,7 +218,6 @@ tbody tr.ttr td.tl{background:#FECDD3!important}
     </div>
   </div>
 
-  <!-- STEP 2 -->
   <div class="card no-print">
     <div class="ch"><div class="cn">2</div><div class="ct">엑셀 파일 업로드</div><div class="csub">여러 파일 동시 업로드 가능</div></div>
     <div class="uzone" id="uzone">
@@ -248,7 +235,6 @@ tbody tr.ttr td.tl{background:#FECDD3!important}
     <input type="file" id="fi" accept=".xlsx,.xls" multiple style="display:none">
   </div>
 
-  <!-- STEP 3 -->
   <div class="card" id="rcard" style="display:none">
     <div class="ch"><div class="cn">3</div><div class="ct">요금 비교 결과</div><div class="csub" id="rcsub">업무용 기준</div></div>
     <div class="tabs no-print">
@@ -261,7 +247,6 @@ tbody tr.ttr td.tl{background:#FECDD3!important}
     <div class="tc" id="tc-a"></div>
   </div>
 
-  <!-- STEP 4 -->
   <div class="card no-print" id="pcard" style="display:none">
     <div class="ch"><div class="cn">4</div><div class="ct">결과 인쇄</div></div>
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
@@ -273,7 +258,6 @@ tbody tr.ttr td.tl{background:#FECDD3!important}
 </div>
 
 <script>
-// ─── 요금 데이터 ───────────────────────────────────────
 const DEF={
   biz:{single:145.82,demand:167.71,other:138.53,label:'업무용',basic:396.79},
   pub:{single:127.34,demand:146.43,other:120.99,label:'공공용',basic:361.98}
@@ -283,10 +267,8 @@ const RATES={
   pub:{...DEF.pub}
 };
 
-// ─── 앱 상태 ────────────────────────────────────────────
 let cType='biz', mData=[], sData=[], uploadedFiles=[];
 
-// ─── 유틸 ───────────────────────────────────────────────
 const fmt=n=>Math.round(n).toLocaleString('ko-KR')+'원';
 const fmtN=n=>Math.round(n).toLocaleString('ko-KR');
 const pct=(a,b)=>b>0?(a/b*100).toFixed(1)+'%':'0%';
@@ -302,7 +284,6 @@ function calcFees(tot,dem,oth){
 }
 function nText(){return `※ 기본요금(계약용량 1Mcal/h당 ${RATES[cType].basic}원)은 요금제와 무관하게 동일하므로 비교에서 제외합니다`;}
 
-// ─── 요금 편집 (모달) ──────────────────────────────────
 function openSettings(){
   const set=(id,v)=>document.getElementById(id).value=v;
   set('r-biz-s',RATES.biz.single); set('r-biz-d',RATES.biz.demand);
@@ -356,7 +337,6 @@ function updateBtnRates(){
   document.getElementById('pub-rates').innerHTML=`· 단일요금: <span>${r.pub.single}원/Mcal</span><br>· 수요관리시간대: <span>${r.pub.demand}원/Mcal</span><br>· 수요관리 이외: <span>${r.pub.other}원/Mcal</span>`;
 }
 
-// ─── 엑셀 파싱 ─────────────────────────────────────────
 function parseFileRecords(buf){
   const wb=XLSX.read(new Uint8Array(buf),{type:'array'});
   const ws=wb.Sheets[wb.SheetNames[0]];
@@ -408,7 +388,7 @@ function processAllFiles(){
     if(!r.mc)continue;
     const k=`${r.y}-${String(r.mo).padStart(2,'0')}`;
     if(!mMap[k])mMap[k]={y:r.y,mo:r.mo,k,tot:0,dem:0};
-    mMap[k].tot+=r.mc; if(r.h>=7&&r.h<=9)mMap[k].dem+=r.mc;
+    mMap[k].tot+=r.mc; if(r.h>=8&&r.h<=10)mMap[k].dem+=r.mc;
   }
   mData=Object.values(mMap).sort((a,b)=>a.k.localeCompare(b.k)).map(m=>({...m,oth:m.tot-m.dem}));
   if(!mData.length){showErr('사용량을 계산할 수 없습니다.');clearResults();return;}
@@ -433,7 +413,6 @@ function clearResults(){
 }
 function showErr(msg){const st=document.getElementById('ust');st.className='ustatus err';st.innerHTML='❌ '+msg;}
 
-// ─── 파일 목록 UI ──────────────────────────────────────
 function updateFileList(){
   const el=document.getElementById('flist');
   if(!uploadedFiles.length){
@@ -477,7 +456,6 @@ function removeFile(i){
   if(uploadedFiles.length)processAllFiles(); else clearResults();
 }
 
-// ─── 렌더링 ────────────────────────────────────────────
 function banner(f,title,sub){
   const isT=f.w==='t',isTie=f.w==='e';
   if(isTie)return `<div class="wbanner gy"><div class="wb-l"><div class="wb-icon">🤝</div><div><div class="wb-t">${title} — 두 요금제의 금액이 동일합니다</div><div class="wb-s">${sub}</div></div></div><div class="wb-amt"><div class="v">차액 없음</div></div></div>`;
