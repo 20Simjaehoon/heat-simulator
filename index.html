@@ -97,6 +97,8 @@ thead th:first-child{border-radius:6px 0 0 0}
 thead th:last-child{border-radius:0 6px 0 0}
 thead th.th-t{background:#15803D}
 thead th.th-s{background:#1D4ED8}
+thead th:nth-child(2),thead th:nth-child(3){width:12%}
+thead th:nth-child(6){width:16%}
 tbody td{padding:10px 12px;font-size:13px;text-align:right;border-bottom:1px solid #F0F4F8}
 tbody td:first-child{text-align:left;font-weight:700;color:#334155}
 tbody td.tw{background:#F0FDF4;color:#166534;font-weight:700}
@@ -473,30 +475,52 @@ function thL(ov,t,b){return ov.w===t?b+' ✓':b;}
 
 function renderMonthly(){
   const T=mData.reduce((s,m)=>s+m.tot,0),D=mData.reduce((s,m)=>s+m.dem,0),O=T-D,ov=calcFees(T,D,O);
-  const pills=mData.map(m=>{const f=calcFees(m.tot,m.dem,m.oth),cls=f.w==='t'?'w':f.w==='s'?'l':'e',res=f.w==='t'?'✓ 시간대별 유리':f.w==='s'?'✓ 단일요금 유리':'— 차액 없음';return `<div class="mpill ${cls}"><div class="mpill-mo">${getML(m.y,m.mo)}</div><div class="mpill-r">${res}</div><div class="mpill-d">${fmt(f.sav)}</div></div>`;}).join('');
-  const rows=mData.map(m=>{const f=calcFees(m.tot,m.dem,m.oth);return `<tr><td>${getML(m.y,m.mo)}</td><td>${fmtN(Math.round(m.tot))}</td><td style="text-align:center">${fmtN(Math.round(m.dem))} (${pct(m.dem,m.tot)})</td><td class="${tdC(f,'s')}">${fmt(f.s)}</td><td class="${tdC(f,'t')}">${fmt(f.t)}</td>${savCell(f)}</tr>`;}).join('');
+  const sorted=[...mData].sort((a,b)=>b.k.localeCompare(a.k));
+  const pills=sorted.map(m=>{const f=calcFees(m.tot,m.dem,m.oth),cls=f.w==='t'?'w':f.w==='s'?'l':'e',res=f.w==='t'?'✓ 시간대별 유리':f.w==='s'?'✓ 단일요금 유리':'— 차액 없음';return `<div class="mpill ${cls}"><div class="mpill-mo">${getML(m.y,m.mo)}</div><div class="mpill-r">${res}</div><div class="mpill-d">${fmt(f.sav)}</div></div>`;}).join('');
+  const rows=sorted.map(m=>{const f=calcFees(m.tot,m.dem,m.oth);return `<tr><td>${getML(m.y,m.mo)}</td><td>${(m.tot/1000).toFixed(1)}</td><td style="text-align:center">${(m.dem/1000).toFixed(1)} (${pct(m.dem,m.tot)})</td><td class="${tdC(f,'s')}">${fmt(f.s)}</td><td class="${tdC(f,'t')}">${fmt(f.t)}</td>${savCell(f)}</tr>`;}).join('');
   const tf=calcFees(T,D,O);
-  document.getElementById('tc-m').innerHTML=`${banner(ov,'전체 동절기','수요관리시간대(07:00~10:00) 기준 | 기본요금 제외')}<div class="pill-row">${pills}</div><table><thead><tr><th>구분</th><th>총사용량(Mcal)</th><th>수요관리 시간대</th><th class="${thC(ov,'s')}">${thL(ov,'s','단일요금')}</th><th class="${thC(ov,'t')}">${thL(ov,'t','시간대별 차등요금')}</th><th>절감액</th></tr></thead><tbody>${rows}<tr class="ttr"><td>합 계</td><td>${fmtN(Math.round(T))}</td><td style="text-align:center">${fmtN(Math.round(D))} (${pct(D,T)})</td><td class="${tdC(tf,'s')}">${fmt(tf.s)}</td><td class="${tdC(tf,'t')}">${fmt(tf.t)}</td>${savCell(tf)}</tr></tbody></table><div class="notice">${nText()}</div>`;
+  document.getElementById('tc-m').innerHTML=`${banner(ov,'전체 동절기','수요관리시간대(07:00~10:00) 기준 | 기본요금 제외')}<div class="pill-row">${pills}</div><table><thead><tr><th>구분</th><th>총사용량(Gcal)</th><th>수요관리 시간대</th><th class="${thC(ov,'s')}">${thL(ov,'s','단일요금')}</th><th class="${thC(ov,'t')}">${thL(ov,'t','시간대별 차등요금')}</th><th>절감액</th></tr></thead><tbody>${rows}<tr class="ttr"><td>합 계</td><td>${(T/1000).toFixed(1)}</td><td style="text-align:center">${(D/1000).toFixed(1)} (${pct(D,T)})</td><td class="${tdC(tf,'s')}">${fmt(tf.s)}</td><td class="${tdC(tf,'t')}">${fmt(tf.t)}</td>${savCell(tf)}</tr></tbody></table><div class="notice">${nText()}</div>`;
 }
 
 function renderYearly(){
   const T=sData.reduce((s,d)=>s+d.tot,0),D=sData.reduce((s,d)=>s+d.dem,0),O=T-D,ov=calcFees(T,D,O);
-  const rows=sData.map(s=>{const f=calcFees(s.tot,s.dem,s.oth);return `<tr><td>${s.lb} 동절기</td><td>${fmtN(Math.round(s.tot))}</td><td style="text-align:center">${fmtN(Math.round(s.dem))} (${pct(s.dem,s.tot)})</td><td class="${tdC(f,'s')}">${fmt(f.s)}</td><td class="${tdC(f,'t')}">${fmt(f.t)}</td>${savCell(f)}</tr>`;}).join('');
+  const rows=sData.map(s=>{const f=calcFees(s.tot,s.dem,s.oth);return `<tr><td>${s.lb} 동절기</td><td>${fmtN(Math.round(s.tot/1000))}</td><td style="text-align:center">${fmtN(Math.round(s.dem/1000))} (${pct(s.dem,s.tot)})</td><td class="${tdC(f,'s')}">${fmt(f.s)}</td><td class="${tdC(f,'t')}">${fmt(f.t)}</td>${savCell(f)}</tr>`;}).join('');
   let totR='';
-  if(sData.length>1){const tf=calcFees(T,D,O);totR=`<tr class="ttr"><td>전체 합계</td><td>${fmtN(Math.round(T))}</td><td style="text-align:center">${fmtN(Math.round(D))} (${pct(D,T)})</td><td class="${tdC(tf,'s')}">${fmt(tf.s)}</td><td class="${tdC(tf,'t')}">${fmt(tf.t)}</td>${savCell(tf)}</tr>`;}
+  if(sData.length>1){const tf=calcFees(T,D,O);totR=`<tr class="ttr"><td>전체 합계</td><td>${fmtN(Math.round(T/1000))}</td><td style="text-align:center">${fmtN(Math.round(D/1000))} (${pct(D,T)})</td><td class="${tdC(tf,'s')}">${fmt(tf.s)}</td><td class="${tdC(tf,'t')}">${fmt(tf.t)}</td>${savCell(tf)}</tr>`;}
   const f1=sData.length===1?calcFees(sData[0].tot,sData[0].dem,sData[0].oth):null;
-  document.getElementById('tc-y').innerHTML=`${banner(ov,'동절기 합산','12월 + 1월 + 2월 사용요금 합계 | 기본요금 제외')}${f1?vsCard(f1):''}<table><thead><tr><th>동절기</th><th>총사용량(Mcal)</th><th>수요관리 시간대</th><th class="${thC(ov,'s')}">${thL(ov,'s','단일요금')}</th><th class="${thC(ov,'t')}">${thL(ov,'t','시간대별 차등요금')}</th><th>절감액</th></tr></thead><tbody>${rows}${totR}</tbody></table><div class="notice">${nText()}</div>`;
+  document.getElementById('tc-y').innerHTML=`${banner(ov,'동절기 합산','12월 + 1월 + 2월 사용요금 합계 | 기본요금 제외')}${f1?vsCard(f1):''}<table><thead><tr><th>동절기</th><th>총사용량(Gcal)</th><th>수요관리 시간대</th><th class="${thC(ov,'s')}">${thL(ov,'s','단일요금')}</th><th class="${thC(ov,'t')}">${thL(ov,'t','시간대별 차등요금')}</th><th>절감액</th></tr></thead><tbody>${rows}${totR}</tbody></table><div class="notice">${nText()}</div>`;
 }
 
 function renderTotal(){
   const T=sData.reduce((s,d)=>s+d.tot,0),D=sData.reduce((s,d)=>s+d.dem,0),O=T-D,ov=calcFees(T,D,O);
   let tb='';
+  const allRows=[];
   for(const s of sData){
-    tb+=s.mos.map((m,i)=>{const f=calcFees(m.tot,m.dem,m.oth),sc=i===0?`<td rowspan="${s.mos.length+1}" style="text-align:center;vertical-align:middle;font-weight:800;color:#0F2D57">${s.lb}</td>`:'';return `<tr>${sc}<td>${m.mo}월</td><td>${fmtN(Math.round(m.tot))}</td><td style="text-align:center">${fmtN(Math.round(m.dem))}</td><td class="${tdC(f,'s')}">${fmt(f.s)}</td><td class="${tdC(f,'t')}">${fmt(f.t)}</td>${savCell(f)}</tr>`;}).join('');
-    const sf=calcFees(s.tot,s.dem,s.oth);
-    tb+=`<tr class="ttr"><td>소 계</td><td>${fmtN(Math.round(s.tot))}</td><td style="text-align:center">${fmtN(Math.round(s.dem))}</td><td class="${tdC(sf,'s')}">${fmt(sf.s)}</td><td class="${tdC(sf,'t')}">${fmt(sf.t)}</td>${savCell(sf)}</tr>`;
+    for(const m of s.mos){
+      allRows.push({s,m});
+    }
   }
-  document.getElementById('tc-a').innerHTML=`${banner(ov,'전체 합계','모든 동절기 데이터 기준 | 기본요금 제외')}<table><thead><tr><th>동절기</th><th>월</th><th>총사용량(Mcal)</th><th>수요관리 시간대</th><th class="${thC(ov,'s')}">${thL(ov,'s','단일요금')}</th><th class="${thC(ov,'t')}">${thL(ov,'t','시간대별 차등요금')}</th><th>절감액</th></tr></thead><tbody>${tb}</tbody></table><div class="notice">${nText()}</div>`;
+  allRows.sort((a,b)=>{
+    const ak=`${a.m.y}-${String(a.m.mo).padStart(2,'0')}`;
+    const bk=`${b.m.y}-${String(b.m.mo).padStart(2,'0')}`;
+    return bk.localeCompare(ak);
+  });
+  let prevSeason='';
+  let rowspan=0;
+  for(let i=0;i<allRows.length;i++){
+    const {s,m}=allRows[i];
+    const f=calcFees(m.tot,m.dem,m.oth);
+    const isSameSeasonStart=i===0||allRows[i-1].s.lb!==s.lb;
+    let sc='';
+    if(isSameSeasonStart){
+      const sameSeasonCount=allRows.filter((r,j)=>j>=i&&r.s.lb===s.lb).length;
+      sc=`<td rowspan="${sameSeasonCount}" style="text-align:center;vertical-align:middle;font-weight:800;color:#0F2D57">${s.lb}</td>`;
+    }
+    tb+=`<tr>${sc}<td>${m.mo}월</td><td>${(m.tot/1000).toFixed(1)}</td><td style="text-align:center">${(m.dem/1000).toFixed(1)}</td><td class="${tdC(f,'s')}">${fmt(f.s)}</td><td class="${tdC(f,'t')}">${fmt(f.t)}</td>${savCell(f)}</tr>`;
+  }
+  const tf=calcFees(T,D,O);
+  tb+=`<tr class="ttr"><td>전체 합계</td><td>${(T/1000).toFixed(1)}</td><td style="text-align:center">${(D/1000).toFixed(1)}</td><td class="${tdC(tf,'s')}">${fmt(tf.s)}</td><td class="${tdC(tf,'t')}">${fmt(tf.t)}</td>${savCell(tf)}</tr>`;
+  document.getElementById('tc-a').innerHTML=`${banner(ov,'전체 합계','모든 동절기 데이터 기준 | 기본요금 제외')}<table><thead><tr><th>동절기</th><th>월</th><th>총사용량(Gcal)</th><th>수요관리 시간대</th><th class="${thC(ov,'s')}">${thL(ov,'s','단일요금')}</th><th class="${thC(ov,'t')}">${thL(ov,'t','시간대별 차등요금')}</th><th>절감액</th></tr></thead><tbody>${tb}</tbody></table><div class="notice">${nText()}</div>`;
 }
 
 function renderAll(){
