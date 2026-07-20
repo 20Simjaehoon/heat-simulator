@@ -137,6 +137,35 @@ tbody tr.ttr td.tl{background:#FECDD3!important}
 .lbox{background:#fff;border-radius:12px;padding:32px 40px;text-align:center}
 .spin{width:36px;height:36px;border:4px solid #BFDBFE;border-top-color:#1A56A8;border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 12px}
 @keyframes sp{to{transform:rotate(360deg)}}
+.hist-row{display:flex;align-items:center;gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid #F0F4F8}
+.switch{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;cursor:pointer;inset:0;background:#CBD5E1;transition:.25s;border-radius:24px}
+.slider::before{content:"";position:absolute;height:18px;width:18px;left:3px;top:3px;background:#fff;transition:.25s;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.switch input:checked+.slider{background:#1A56A8}
+.switch input:checked+.slider::before{transform:translateX(20px)}
+.hist-label{flex:1}
+.hist-title{font-size:13px;font-weight:800;color:#334155}
+.hist-sub{font-size:11px;color:#94A3B8;margin-top:2px}
+.hist-badge{display:none;background:#DBEAFE;border:1px solid #93C5FD;color:#1E40AF;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.hist-badge.on{display:inline-flex;align-items:center;gap:3px}
+.htabs{display:flex;gap:8px;margin-bottom:14px}
+.htab{flex:1;padding:8px;border:1.5px solid #E0E8F0;border-radius:8px;background:#F8FAFC;cursor:pointer;font-size:12px;font-weight:700;color:#64748B;text-align:center;transition:.2s;font-family:inherit}
+.htab.on{border-color:#1A56A8;background:#EFF6FF;color:#1A56A8}
+.hyear-table{width:100%;border-collapse:collapse;margin-bottom:12px;table-layout:fixed}
+.hyear-table th{background:#F8FAFC;color:#64748B;font-size:11px;font-weight:700;padding:8px 4px;border-bottom:1.5px solid #E0E8F0;text-align:center}
+.hyear-table td{padding:6px 4px;text-align:center;border-bottom:1px solid #F0F4F8}
+.hyear-table th:nth-child(1),.hyear-table td:nth-child(1){width:30%}
+.hyear-table th:nth-child(2),.hyear-table td:nth-child(2),
+.hyear-table th:nth-child(3),.hyear-table td:nth-child(3),
+.hyear-table th:nth-child(4),.hyear-table td:nth-child(4){width:20%}
+.hyear-table th:nth-child(5),.hyear-table td:nth-child(5){width:10%}
+.hyear-table input{width:100%;border:1px solid #E0E8F0;border-radius:6px;padding:6px 2px;font-size:12px;font-family:inherit;text-align:center;color:#1a2332}
+.hyear-table input.sample{color:#94A3B8}
+.hyear-table input:focus{outline:none;border-color:#1A56A8}
+.hyear-del{background:none;border:1px solid #FECACA;border-radius:6px;color:#DC2626;font-size:11px;font-weight:700;cursor:pointer;padding:4px 8px;font-family:inherit;transition:.2s}
+.hyear-del:hover{background:#DC2626;color:#fff}
+.hsample-note{background:#F0F9FF;border:1px solid #BAE6FD;color:#0369A1;font-size:11px;padding:8px 12px;border-radius:8px;margin-bottom:14px;line-height:1.6}
 .print-only{display:none}
 @media print{
   body{background:#fff!important}
@@ -190,6 +219,30 @@ tbody tr.ttr td.tl{background:#FECDD3!important}
   </div>
 </div>
 
+<div class="moverlay" id="hmoverlay" onclick="closeOnHOverlay(event)">
+  <div class="mbox">
+    <div class="mhdr">
+      <div class="mhdr-t">📅 연도별 과거 요금 관리</div>
+      <button class="mhdr-x" onclick="closeHistManager()">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="hsample-note">ℹ 연도는 <b>동절기 시작 연도</b> 기준입니다. 예) 2023 = '23 동절기(23.12~24.2, 23.7.1 요금조정 적용)</div>
+      <div class="htabs">
+        <button class="htab on" id="htab-biz" onclick="switchHistTab('biz')">🏢 업무용</button>
+        <button class="htab" id="htab-pub" onclick="switchHistTab('pub')">🏛️ 공공용</button>
+      </div>
+      <div id="hyear-body"></div>
+    </div>
+    <div class="mfooter">
+      <div></div>
+      <div class="mbtns">
+        <button class="btn-rst" onclick="resetHistRates()">↺ 기본값으로 초기화</button>
+        <button class="btn-sav" onclick="closeHistManager()">완료</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="hdr">
   <h1>🏢 지역난방 열요금 시뮬레이터</h1>
   <p>업무용 · 공공용 사용요금 비교 분석 | 동절기(12월~2월) 전용</p>
@@ -217,6 +270,18 @@ tbody tr.ttr td.tl{background:#FECDD3!important}
         <div class="cbtn-rates" id="pub-rates">· 단일요금: <span>127.34원/Mcal</span><br>· 수요관리시간대: <span>146.43원/Mcal</span><br>· 수요관리 이외: <span>120.99원/Mcal</span></div>
         <div class="cbadge">✓ 선택됨</div>
       </div>
+    </div>
+    <div class="hist-row">
+      <label class="switch">
+        <input type="checkbox" id="hist-toggle" onchange="toggleHistMode(this.checked)">
+        <span class="slider"></span>
+      </label>
+      <div class="hist-label">
+        <div class="hist-title">🕐 연도별 과거 요금 적용</div>
+        <div class="hist-sub" id="hist-sub">끄면 현재 요금(우측 상단 ⚙️ 설정값) 기준으로 계산합니다</div>
+      </div>
+      <span class="hist-badge" id="hist-badge">🕐 과거요금 적용중</span>
+      <button class="gear-btn" onclick="openHistManager()" title="연도별 요금 관리">📅</button>
     </div>
   </div>
 
@@ -269,7 +334,28 @@ const RATES={
   pub:{...DEF.pub}
 };
 
-let cType='biz', mData=[], sData=[], uploadedFiles=[];
+const HIST_RATES={
+  biz:{
+    2022:{single:116.69,demand:134.21,other:110.86,label:'업무용',basic:396.79},
+    2023:{single:131.87,demand:151.66,other:125.28,label:'업무용',basic:396.79},
+    2024:{single:145.82,demand:167.71,other:138.53,label:'업무용',basic:396.79},
+    2025:{single:145.82,demand:167.71,other:138.53,label:'업무용',basic:396.79}
+  },
+  pub:{
+    2022:{single:101.91,demand:117.18,other:96.82,label:'공공용',basic:361.98},
+    2023:{single:115.16,demand:132.42,other:109.41,label:'공공용',basic:361.98},
+    2024:{single:127.34,demand:146.43,other:120.99,label:'공공용',basic:361.98},
+    2025:{single:127.34,demand:146.43,other:120.99,label:'공공용',basic:361.98}
+  }
+};
+
+const SAMPLE_HIST_RATES=JSON.parse(JSON.stringify(HIST_RATES));
+function isSampleVal(type,y,field){
+  const s=SAMPLE_HIST_RATES[type][y];
+  return s&&s[field]===HIST_RATES[type][y][field];
+}
+
+let cType='biz', mData=[], sData=[], uploadedFiles=[], histMode=false, hTab='biz';
 
 const fmt=n=>Math.round(n).toLocaleString('ko-KR')+'원';
 const fmtN=n=>Math.round(n).toLocaleString('ko-KR');
@@ -279,12 +365,24 @@ const fmtSize=b=>b<1048576?(b/1024).toFixed(1)+'KB':(b/1048576).toFixed(1)+'MB';
 function getSeason(y,m){
   return m===12?{k:`${y}${y+1}`,lb:`${y}–${String(y+1).slice(-2)}`}:{k:`${y-1}${y}`,lb:`${y-1}–${String(y).slice(-2)}`};
 }
+function seasonYear(y,m){return m===12?y:y-1;}
 function getML(y,m){return `${y}년 ${m}월`;}
-function calcFees(tot,dem,oth){
-  const r=RATES[cType],s=tot*r.single,t=dem*r.demand+oth*r.other,d=s-t;
+function getRate(year){
+  if(histMode&&HIST_RATES[cType][year])return HIST_RATES[cType][year];
+  return RATES[cType];
+}
+function calcFees(tot,dem,oth,year){
+  const r=getRate(year),s=tot*r.single,t=dem*r.demand+oth*r.other,d=s-t;
   return{s,t,sav:Math.abs(d),w:d>0.01?'t':d<-0.01?'s':'e'};
 }
-function nText(){return `※ 기본요금(계약용량 1Mcal/h당 ${RATES[cType].basic}원)은 요금제와 무관하게 동일하므로 비교에서 제외합니다`;}
+function sumFees(arr){
+  const s=arr.reduce((a,f)=>a+f.s,0),t=arr.reduce((a,f)=>a+f.t,0),d=s-t;
+  return{s,t,sav:Math.abs(d),w:d>0.01?'t':d<-0.01?'s':'e'};
+}
+function nText(){
+  if(histMode)return `※ 각 연도에 해당하는 과거 요금을 적용하여 계산했습니다 (기본요금은 요금제와 무관하게 동일하므로 비교에서 제외)`;
+  return `※ 기본요금(계약용량 1Mcal/h당 ${RATES[cType].basic}원)은 요금제와 무관하게 동일하므로 비교에서 제외합니다`;
+}
 
 function openSettings(){
   const set=(id,v)=>document.getElementById(id).value=v;
@@ -337,6 +435,70 @@ function updateBtnRates(){
   const r=RATES;
   document.getElementById('biz-rates').innerHTML=`· 단일요금: <span>${r.biz.single}원/Mcal</span><br>· 수요관리시간대: <span>${r.biz.demand}원/Mcal</span><br>· 수요관리 이외: <span>${r.biz.other}원/Mcal</span>`;
   document.getElementById('pub-rates').innerHTML=`· 단일요금: <span>${r.pub.single}원/Mcal</span><br>· 수요관리시간대: <span>${r.pub.demand}원/Mcal</span><br>· 수요관리 이외: <span>${r.pub.other}원/Mcal</span>`;
+}
+
+function toggleHistMode(v){
+  histMode=v;
+  document.getElementById('hist-badge').classList.toggle('on',histMode);
+  document.getElementById('hist-sub').textContent=histMode
+    ?'각 연도에 해당하는 과거 요금을 적용하여 계산합니다'
+    :'끄면 현재 요금(우측 상단 ⚙️ 설정값) 기준으로 계산합니다';
+  if(mData.length)renderAll();
+}
+
+function openHistManager(){
+  hTab='biz';
+  document.getElementById('htab-biz').classList.add('on');
+  document.getElementById('htab-pub').classList.remove('on');
+  renderHistTable();
+  document.getElementById('hmoverlay').classList.add('open');
+}
+function closeHistManager(){document.getElementById('hmoverlay').classList.remove('open');}
+function closeOnHOverlay(e){if(e.target.id==='hmoverlay')closeHistManager();}
+function switchHistTab(t){
+  hTab=t;
+  document.getElementById('htab-biz').classList.toggle('on',t==='biz');
+  document.getElementById('htab-pub').classList.toggle('on',t==='pub');
+  renderHistTable();
+}
+function renderHistTable(){
+  const years=Object.keys(HIST_RATES[hTab]).map(Number).sort((a,b)=>b-a);
+  const sc=(y,f)=>isSampleVal(hTab,y,f)?' class="sample"':'';
+  const rows=years.map(y=>`
+    <tr>
+      <td style="font-weight:800;color:#0F2D57">'${String(y).slice(-2)} 동절기<div style="font-weight:400;color:#94A3B8;font-size:10px">(${y}.12~${y+1}.2)</div></td>
+      <td><input type="number" step="0.01" min="0"${sc(y,'single')} value="${HIST_RATES[hTab][y].single}" onchange="updHistVal(${y},'single',this.value)"></td>
+      <td><input type="number" step="0.01" min="0"${sc(y,'demand')} value="${HIST_RATES[hTab][y].demand}" onchange="updHistVal(${y},'demand',this.value)"></td>
+      <td><input type="number" step="0.01" min="0"${sc(y,'other')} value="${HIST_RATES[hTab][y].other}" onchange="updHistVal(${y},'other',this.value)"></td>
+      <td><button class="hyear-del" onclick="removeHistYear(${y})">✕</button></td>
+    </tr>`).join('');
+  document.getElementById('hyear-body').innerHTML=`
+    <table class="hyear-table">
+      <thead><tr><th>동절기</th><th>단일요금</th><th>수요관리</th><th>수요관리 이외 시간대</th><th></th></tr></thead>
+      <tbody>${rows||'<tr><td colspan="5" style="color:#94A3B8;padding:16px">등록된 연도가 없습니다</td></tr>'}</tbody>
+    </table>`;
+}
+function updHistVal(y,field,v){
+  const n=parseFloat(v);
+  if(isNaN(n)||n<0)return;
+  HIST_RATES[hTab][y][field]=n;
+  renderHistTable();
+  if(histMode&&mData.length)renderAll();
+}
+function removeHistYear(y){
+  delete HIST_RATES.biz[y];
+  delete HIST_RATES.pub[y];
+  renderHistTable();
+  if(histMode&&mData.length)renderAll();
+}
+function resetHistRates(){
+  if(!confirm('연도별 과거 요금을 기존 샘플 요금으로 되돌립니다.\n직접 입력·추가·삭제한 내용은 모두 초기화됩니다. 계속할까요?'))return;
+  for(const t of ['biz','pub']){
+    for(const k of Object.keys(HIST_RATES[t]))delete HIST_RATES[t][k];
+    for(const y of Object.keys(SAMPLE_HIST_RATES[t]))HIST_RATES[t][y]={...SAMPLE_HIST_RATES[t][y]};
+  }
+  renderHistTable();
+  if(histMode&&mData.length)renderAll();
 }
 
 function parseFileRecords(buf){
@@ -466,7 +628,9 @@ function banner(f,title,sub){
 }
 function vsCard(f){
   const r=RATES[cType],isT=f.w==='t';
-  return `<div class="vs-row"><div class="vs-c ${isT?'los':'win'}"><div class="vs-type">단일요금</div><div class="vs-val">${fmt(f.s)}</div><div class="vs-rate">${r.single}원/Mcal 일괄 적용</div></div><div class="vs-div">VS</div><div class="vs-c ${isT?'win':'los'}"><div class="vs-type">시간대별 차등요금</div><div class="vs-val">${fmt(f.t)}</div><div class="vs-rate">수요관리 ${r.demand} / 기타 ${r.other}원</div></div></div>`;
+  const note1=histMode?'연도별 요금 적용':`${r.single}원/Mcal 일괄 적용`;
+  const note2=histMode?'연도별 요금 적용':`수요관리 ${r.demand} / 기타 ${r.other}원`;
+  return `<div class="vs-row"><div class="vs-c ${isT?'los':'win'}"><div class="vs-type">단일요금</div><div class="vs-val">${fmt(f.s)}</div><div class="vs-rate">${note1}</div></div><div class="vs-div">VS</div><div class="vs-c ${isT?'win':'los'}"><div class="vs-type">시간대별 차등요금</div><div class="vs-val">${fmt(f.t)}</div><div class="vs-rate">${note2}</div></div></div>`;
 }
 function savCell(f){const a=f.w==='t'?'▼':f.w==='s'?'▲':'—',c=f.w==='t'?'#166534':f.w==='s'?'#991B1B':'#94A3B8';return `<td style="text-align:center;font-weight:700;color:${c}">${a} ${fmt(f.sav)}</td>`;}
 function tdC(f,t){return f.w===t?'tw':'tl';}
@@ -474,44 +638,49 @@ function thC(ov,t){return ov.w===t?(t==='t'?'th-t':'th-s'):'';}
 function thL(ov,t,b){return ov.w===t?b+' ✓':b;}
 
 function renderMonthly(){
-  const T=mData.reduce((s,m)=>s+m.tot,0),D=mData.reduce((s,m)=>s+m.dem,0),O=T-D,ov=calcFees(T,D,O);
-  const sorted=[...mData].sort((a,b)=>b.k.localeCompare(a.k));
-  const pills=sorted.map(m=>{const f=calcFees(m.tot,m.dem,m.oth),cls=f.w==='t'?'w':f.w==='s'?'l':'e',res=f.w==='t'?'✓ 시간대별 유리':f.w==='s'?'✓ 단일요금 유리':'— 차액 없음';return `<div class="mpill ${cls}"><div class="mpill-mo">${getML(m.y,m.mo)}</div><div class="mpill-r">${res}</div><div class="mpill-d">${fmt(f.sav)}</div></div>`;}).join('');
-  const rows=sorted.map(m=>{const f=calcFees(m.tot,m.dem,m.oth);return `<tr><td>${getML(m.y,m.mo)}</td><td>${(m.tot/1000).toFixed(1)}</td><td style="text-align:center">${(m.dem/1000).toFixed(1)} (${pct(m.dem,m.tot)})</td><td class="${tdC(f,'s')}">${fmt(f.s)}</td><td class="${tdC(f,'t')}">${fmt(f.t)}</td>${savCell(f)}</tr>`;}).join('');
-  const tf=calcFees(T,D,O);
-  document.getElementById('tc-m').innerHTML=`${banner(ov,'전체 동절기','수요관리시간대(07:00~10:00) 기준 | 기본요금 제외')}<div class="pill-row">${pills}</div><table><thead><tr><th>구분</th><th>총사용량(Gcal)</th><th>수요관리 시간대</th><th class="${thC(ov,'s')}">${thL(ov,'s','단일요금')}</th><th class="${thC(ov,'t')}">${thL(ov,'t','시간대별 차등요금')}</th><th>절감액</th></tr></thead><tbody>${rows}<tr class="ttr"><td>합 계</td><td>${(T/1000).toFixed(1)}</td><td style="text-align:center">${(D/1000).toFixed(1)} (${pct(D,T)})</td><td class="${tdC(tf,'s')}">${fmt(tf.s)}</td><td class="${tdC(tf,'t')}">${fmt(tf.t)}</td>${savCell(tf)}</tr></tbody></table><div class="notice">${nText()}</div>`;
+  const withFee=mData.map(m=>({m,f:calcFees(m.tot,m.dem,m.oth,seasonYear(m.y,m.mo))}));
+  const ov=sumFees(withFee.map(x=>x.f));
+  const T=mData.reduce((s,m)=>s+m.tot,0),D=mData.reduce((s,m)=>s+m.dem,0);
+  const sorted=[...withFee].sort((a,b)=>b.m.k.localeCompare(a.m.k));
+  const pills=sorted.map(({m,f})=>{const cls=f.w==='t'?'w':f.w==='s'?'l':'e',res=f.w==='t'?'✓ 시간대별 유리':f.w==='s'?'✓ 단일요금 유리':'— 차액 없음';return `<div class="mpill ${cls}"><div class="mpill-mo">${getML(m.y,m.mo)}</div><div class="mpill-r">${res}</div><div class="mpill-d">${fmt(f.sav)}</div></div>`;}).join('');
+  const rows=sorted.map(({m,f})=>`<tr><td>${getML(m.y,m.mo)}</td><td>${(m.tot/1000).toFixed(1)}</td><td style="text-align:center">${(m.dem/1000).toFixed(1)} (${pct(m.dem,m.tot)})</td><td class="${tdC(f,'s')}">${fmt(f.s)}</td><td class="${tdC(f,'t')}">${fmt(f.t)}</td>${savCell(f)}</tr>`).join('');
+  document.getElementById('tc-m').innerHTML=`${banner(ov,'전체 동절기','수요관리시간대(07:00~10:00) 기준 | 기본요금 제외')}<div class="pill-row">${pills}</div><table><thead><tr><th>구분</th><th>총사용량(Gcal)</th><th>수요관리 시간대</th><th class="${thC(ov,'s')}">${thL(ov,'s','단일요금')}</th><th class="${thC(ov,'t')}">${thL(ov,'t','시간대별 차등요금')}</th><th>절감액</th></tr></thead><tbody>${rows}<tr class="ttr"><td>합 계</td><td>${(T/1000).toFixed(1)}</td><td style="text-align:center">${(D/1000).toFixed(1)} (${pct(D,T)})</td><td class="${tdC(ov,'s')}">${fmt(ov.s)}</td><td class="${tdC(ov,'t')}">${fmt(ov.t)}</td>${savCell(ov)}</tr></tbody></table><div class="notice">${nText()}</div>`;
 }
 
 function renderYearly(){
-  const T=sData.reduce((s,d)=>s+d.tot,0),D=sData.reduce((s,d)=>s+d.dem,0),O=T-D,ov=calcFees(T,D,O);
-  const rows=sData.map(s=>{const f=calcFees(s.tot,s.dem,s.oth);return `<tr><td>${s.lb} 동절기</td><td>${(s.tot/1000).toFixed(1)}</td><td style="text-align:center">${(s.dem/1000).toFixed(1)} (${pct(s.dem,s.tot)})</td><td class="${tdC(f,'s')}">${fmt(f.s)}</td><td class="${tdC(f,'t')}">${fmt(f.t)}</td>${savCell(f)}</tr>`;}).join('');
+  const withFee=sData.map(s=>({s,f:sumFees(s.mos.map(m=>calcFees(m.tot,m.dem,m.oth,seasonYear(m.y,m.mo))))}));
+  const ov=sumFees(withFee.map(x=>x.f));
+  const T=sData.reduce((s,d)=>s+d.tot,0),D=sData.reduce((s,d)=>s+d.dem,0);
+  const rows=withFee.map(({s,f})=>`<tr><td>${s.lb} 동절기</td><td>${(s.tot/1000).toFixed(1)}</td><td style="text-align:center">${(s.dem/1000).toFixed(1)} (${pct(s.dem,s.tot)})</td><td class="${tdC(f,'s')}">${fmt(f.s)}</td><td class="${tdC(f,'t')}">${fmt(f.t)}</td>${savCell(f)}</tr>`).join('');
   let totR='';
-  if(sData.length>1){const tf=calcFees(T,D,O);totR=`<tr class="ttr"><td>전체 합계</td><td>${(T/1000).toFixed(1)}</td><td style="text-align:center">${(D/1000).toFixed(1)} (${pct(D,T)})</td><td class="${tdC(tf,'s')}">${fmt(tf.s)}</td><td class="${tdC(tf,'t')}">${fmt(tf.t)}</td>${savCell(tf)}</tr>`;}
-  const f1=sData.length===1?calcFees(sData[0].tot,sData[0].dem,sData[0].oth):null;
+  if(sData.length>1){totR=`<tr class="ttr"><td>전체 합계</td><td>${(T/1000).toFixed(1)}</td><td style="text-align:center">${(D/1000).toFixed(1)} (${pct(D,T)})</td><td class="${tdC(ov,'s')}">${fmt(ov.s)}</td><td class="${tdC(ov,'t')}">${fmt(ov.t)}</td>${savCell(ov)}</tr>`;}
+  const f1=withFee.length===1?withFee[0].f:null;
   document.getElementById('tc-y').innerHTML=`${banner(ov,'동절기 합산','12월 + 1월 + 2월 사용요금 합계 | 기본요금 제외')}${f1?vsCard(f1):''}<table><thead><tr><th>동절기</th><th>총사용량(Gcal)</th><th>수요관리 시간대</th><th class="${thC(ov,'s')}">${thL(ov,'s','단일요금')}</th><th class="${thC(ov,'t')}">${thL(ov,'t','시간대별 차등요금')}</th><th>절감액</th></tr></thead><tbody>${rows}${totR}</tbody></table><div class="notice">${nText()}</div>`;
 }
 
 function renderTotal(){
-  const T=sData.reduce((s,d)=>s+d.tot,0),D=sData.reduce((s,d)=>s+d.dem,0),O=T-D,ov=calcFees(T,D,O);
   let tb='';
+  const allMonthFees=[];
   const sortedSeasons=[...sData].sort((a,b)=>b.k.localeCompare(a.k));
   for(const s of sortedSeasons){
     const sortedMos=[...s.mos].sort((a,b)=>b.k.localeCompare(a.k));
-    const sf=calcFees(s.tot,s.dem,s.oth);
-    sortedMos.forEach((m,i)=>{
-      const f=calcFees(m.tot,m.dem,m.oth);
+    const monthFeeObjs=sortedMos.map(m=>({m,f:calcFees(m.tot,m.dem,m.oth,seasonYear(m.y,m.mo))}));
+    monthFeeObjs.forEach(x=>allMonthFees.push(x.f));
+    const sf=sumFees(monthFeeObjs.map(x=>x.f));
+    monthFeeObjs.forEach(({m,f},i)=>{
       const seasonCell=i===0?`<td style="font-weight:800;color:#0F2D57">${s.lb}</td>`:`<td></td>`;
       tb+=`<tr>${seasonCell}<td style="font-weight:700;color:#334155">${m.mo}월</td><td>${(m.tot/1000).toFixed(1)}</td><td style="text-align:center">${(m.dem/1000).toFixed(1)}</td><td class="${tdC(f,'s')}">${fmt(f.s)}</td><td class="${tdC(f,'t')}">${fmt(f.t)}</td>${savCell(f)}</tr>`;
     });
     tb+=`<tr class="ttr"><td></td><td>소 계</td><td>${(s.tot/1000).toFixed(1)}</td><td style="text-align:center">${(s.dem/1000).toFixed(1)}</td><td class="${tdC(sf,'s')}">${fmt(sf.s)}</td><td class="${tdC(sf,'t')}">${fmt(sf.t)}</td>${savCell(sf)}</tr>`;
   }
-  const tf=calcFees(T,D,O);
-  tb+=`<tr class="ttr" style="border-top:3px solid #0F2D57"><td colspan="2" style="text-align:left">전체 합계</td><td>${(T/1000).toFixed(1)}</td><td style="text-align:center">${(D/1000).toFixed(1)}</td><td class="${tdC(tf,'s')}">${fmt(tf.s)}</td><td class="${tdC(tf,'t')}">${fmt(tf.t)}</td>${savCell(tf)}</tr>`;
+  const ov=sumFees(allMonthFees);
+  const T=sData.reduce((a,s)=>a+s.tot,0),D=sData.reduce((a,s)=>a+s.dem,0);
+  tb+=`<tr class="ttr" style="border-top:3px solid #0F2D57"><td colspan="2" style="text-align:left">전체 합계</td><td>${(T/1000).toFixed(1)}</td><td style="text-align:center">${(D/1000).toFixed(1)}</td><td class="${tdC(ov,'s')}">${fmt(ov.s)}</td><td class="${tdC(ov,'t')}">${fmt(ov.t)}</td>${savCell(ov)}</tr>`;
   document.getElementById('tc-a').innerHTML=`${banner(ov,'전체 합계','모든 동절기 데이터 기준 | 기본요금 제외')}<table><thead><tr><th>동절기</th><th>월</th><th>총사용량(Gcal)</th><th>수요관리 시간대</th><th class="${thC(ov,'s')}">${thL(ov,'s','단일요금')}</th><th class="${thC(ov,'t')}">${thL(ov,'t','시간대별 차등요금')}</th><th>절감액</th></tr></thead><tbody>${tb}</tbody></table><div class="notice">${nText()}</div>`;
 }
 
 function renderAll(){
-  document.getElementById('rcsub').textContent=`${RATES[cType].label} 기준`;
+  document.getElementById('rcsub').textContent=`${RATES[cType].label} 기준${histMode?' · 연도별 과거요금 적용':''}`;
   renderMonthly();renderYearly();renderTotal();
   document.getElementById('rcard').style.display='';
   document.getElementById('pcard').style.display='';
@@ -529,7 +698,7 @@ function swTab(el,id){
   el.classList.add('on');document.getElementById('tc-'+id).classList.add('on');
 }
 function doPrint(){
-  document.getElementById('ph').textContent=`지역난방 열요금 비교 분석 결과 | 계약종별: ${RATES[cType].label} | 출력일: ${new Date().toLocaleDateString('ko-KR')}`;
+  document.getElementById('ph').textContent=`지역난방 열요금 비교 분석 결과 | 계약종별: ${RATES[cType].label}${histMode?' (연도별 과거요금 적용)':''} | 출력일: ${new Date().toLocaleDateString('ko-KR')}`;
   window.print();
 }
 
@@ -540,7 +709,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   uz.addEventListener('dragleave',()=>uz.classList.remove('drag'));
   uz.addEventListener('drop',e=>{e.preventDefault();uz.classList.remove('drag');addFiles(e.dataTransfer.files);});
   fi.addEventListener('change',e=>{if(e.target.files.length)addFiles(e.target.files);fi.value='';});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSettings();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeSettings();closeHistManager();}});
 });
 </script>
 </body>
