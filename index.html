@@ -49,6 +49,10 @@ body{font-family:'Malgun Gothic','맑은 고딕',Apple SD Gothic Neo,sans-serif;
 .ustatus{border-radius:8px;padding:11px 16px;margin-top:12px;font-size:13px;font-weight:600;display:none}
 .ustatus.ok{background:#F0FDF4;border:1px solid #A7F3D0;color:#166534;display:block}
 .ustatus.err{background:#FFF1F2;border:1px solid #FECDD3;color:#991B1B;display:block}
+.gapwarn{background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;border-radius:8px;padding:11px 16px;margin-top:10px;font-size:12.5px;font-weight:600;display:none}
+.gapwarn.on{display:block}
+.gapwarn ul{margin:6px 0 0;padding-left:18px;font-weight:400}
+.gapwarn li{padding:1px 0}
 .uinfo{background:#F0F9FF;border:1px solid #BAE6FD;border-radius:8px;padding:12px 16px;margin-top:14px}
 .uinfo li{font-size:12px;color:#0369A1;padding:2px 0;list-style:none}
 .uinfo li::before{content:"• "}
@@ -304,6 +308,7 @@ tbody tr.ttr td.tl{background:#FECDD3!important}
     </div>
     <div class="flist" id="flist"></div>
     <div class="ustatus" id="ust"></div>
+    <div class="gapwarn" id="ugapwarn"></div>
     <ul class="uinfo">
       <li>필수 컬럼: 날짜(YYYYMMDD), 시간(N시), 열지침량(Gcal) — 열 순서가 바뀌어도 헤더 이름으로 자동 인식</li>
       <li>시간별 사용량(Mcal) = (현재 열지침량 − 이전 시간 열지침량) × 1,000</li>
@@ -606,21 +611,37 @@ function processAllFiles(){
   const seen=new Set();
   all=all.filter(r=>{const k=`${r.ds}-${r.h}`;if(seen.has(k))return false;seen.add(k);return true;});
   all.sort((a,b)=>+a.ds*100+a.h-(+b.ds*100+b.h));
-  for(let i=0;i<all.length;i++){
-    if(i===0){all[i].mc=0;continue;}
+
+  const GAP_MAX_HOURS=24; // 이보다 긴 공백은 계량기 교체·구간 경계로 보고 보간하지 않음(0 처리)
+  const usage=[]; // 실제 계산에 쓰이는 시간별 사용량 목록 {y,mo,d,h,mc}
+  const demandGaps=[]; // 수요관리시간대(8~10시)에 걸친 보간 기록
+  for(let i=1;i<all.length;i++){
     const p=all[i-1],c=all[i];
     const pd=new Date(p.y,p.mo-1,p.d,p.h),cd=new Date(c.y,c.mo-1,c.d,c.h);
-    if((cd-pd)===3600000){
-      const diff=c.v-p.v;
-      // 지침값이 튀었다가 돌아오는 경우 마이너스를 그대로 반영해 상쇄(스파이크 보정).
-      // 단, 하락폭이 직전 검침량의 절반 이상이면 계량기 교체(0부터 재시작)로 보고 0 처리.
-      all[i].mc=(diff<0&&Math.abs(diff)>=p.v*0.5)?0:diff*1000;
-    }else{
-      all[i].mc=0;
+    const hrs=Math.round((cd-pd)/3600000);
+    if(hrs<1||hrs>GAP_MAX_HOURS)continue; // 시간차 이상(중복 등) 또는 계량기 교체·시즌 경계 → 건너뜀
+    const diff=c.v-p.v;
+    // 지침값이 튀었다가 돌아오는 경우 마이너스를 그대로 반영해 상쇄(스파이크 보정).
+    // 단, 하락폭이 직전 검침량의 절반 이상이면 계량기 교체(0부터 재시작)로 보고 0 처리.
+    const isReset=diff<0&&Math.abs(diff)>=p.v*0.5;
+    const perHour=isReset?0:(diff*1000)/hrs; // 공백(hrs>1)이면 총 변화량을 시간 수만큼 균등 분배(보간)
+    for(let s=1;s<=hrs;s++){
+      const t=new Date(pd.getTime()+s*3600000);
+      let yy,mm,dd,hval;
+      if(t.getHours()===0){
+        // 자정 시각 = 전날 24시로 표기(월말 귀속 규칙과 일관되게)
+        const prev=new Date(t.getTime()-3600000);
+        yy=prev.getFullYear();mm=prev.getMonth()+1;dd=prev.getDate();hval=24;
+      }else{
+        yy=t.getFullYear();mm=t.getMonth()+1;dd=t.getDate();hval=t.getHours();
+      }
+      if(![12,1,2].includes(mm))continue; // 보간 중 동절기 밖으로 넘어가면 제외
+      usage.push({y:yy,mo:mm,d:dd,h:hval,mc:perHour});
+      if(hrs>1&&hval>=8&&hval<=10)demandGaps.push({y:yy,mo:mm,d:dd,h:hval});
     }
   }
   const mMap={};
-  for(const r of all){
+  for(const r of usage){
     if(!r.mc)continue;
     const k=`${r.y}-${String(r.mo).padStart(2,'0')}`;
     if(!mMap[k])mMap[k]={y:r.y,mo:r.mo,k,tot:0,dem:0};
@@ -639,15 +660,38 @@ function processAllFiles(){
   const st=document.getElementById('ust');
   st.className='ustatus ok';
   st.innerHTML=`✅ 총 ${uploadedFiles.length}개 파일 분석 완료 — ${mData.length}개월, ${sData.length}개 동절기 데이터`;
+
+  const gw=document.getElementById('ugapwarn');
+  if(demandGaps.length){
+    const byDay={};
+    demandGaps.forEach(g=>{
+      const dk=`${g.y}${String(g.mo).padStart(2,'0')}${String(g.d).padStart(2,'0')}`;
+      if(!byDay[dk])byDay[dk]={y:g.y,mo:g.mo,d:g.d,hs:new Set()};
+      byDay[dk].hs.add(g.h);
+    });
+    const items=Object.values(byDay).sort((a,b)=>(a.y*10000+a.mo*100+a.d)-(b.y*10000+b.mo*100+b.d));
+    const li=items.map(g=>`<li>${g.y}.${String(g.mo).padStart(2,'0')}.${String(g.d).padStart(2,'0')} — ${[...g.hs].sort((a,b)=>a-b).map(h=>h+'시').join(', ')}</li>`).join('');
+    gw.className='gapwarn on';
+    gw.innerHTML=`⚠️ 원본 데이터에 빈 값(공백)이 있어 앞뒤 지침값으로 균등 보간했습니다. 그중 <b>수요관리시간대(07~10시)</b>에 걸친 날짜가 ${items.length}건 있어 실제 요금과 다소 차이가 날 수 있습니다.<ul>${li}</ul>`;
+  }else{
+    gw.className='gapwarn';
+    gw.innerHTML='';
+  }
 }
 
 function clearResults(){
   mData=[];sData=[];
   document.getElementById('rcard').style.display='none';
   document.getElementById('pcard').style.display='none';
-  if(!uploadedFiles.length){const st=document.getElementById('ust');st.className='ustatus';st.innerHTML='';}
+  if(!uploadedFiles.length){
+    const st=document.getElementById('ust');st.className='ustatus';st.innerHTML='';
+    const gw=document.getElementById('ugapwarn');gw.className='gapwarn';gw.innerHTML='';
+  }
 }
-function showErr(msg){const st=document.getElementById('ust');st.className='ustatus err';st.innerHTML='❌ '+msg;}
+function showErr(msg){
+  const st=document.getElementById('ust');st.className='ustatus err';st.innerHTML='❌ '+msg;
+  const gw=document.getElementById('ugapwarn');gw.className='gapwarn';gw.innerHTML='';
+}
 
 function updateFileList(){
   const el=document.getElementById('flist');
