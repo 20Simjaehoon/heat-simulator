@@ -154,7 +154,7 @@ tbody tr.ttr td.tl{background:#FECDD3!important}
 .htab.on{border-color:#1A56A8;background:#EFF6FF;color:#1A56A8}
 .hyear-table{width:100%;border-collapse:collapse;margin-bottom:12px;table-layout:fixed}
 .hyear-table th{background:#F8FAFC;color:#64748B;font-size:11px;font-weight:700;padding:8px 4px;border-bottom:1.5px solid #E0E8F0;text-align:center}
-.hyear-table td{padding:6px 4px;text-align:center;border-bottom:1px solid #F0F4F8}
+.hyear-table td{padding:8px 4px;text-align:center;border-bottom:1px solid #F0F4F8;vertical-align:top}
 .hyear-table th:nth-child(1),.hyear-table td:nth-child(1){width:30%}
 .hyear-table th:nth-child(2),.hyear-table td:nth-child(2),
 .hyear-table th:nth-child(3),.hyear-table td:nth-child(3),
@@ -163,8 +163,18 @@ tbody tr.ttr td.tl{background:#FECDD3!important}
 .hyear-table input{width:100%;border:1px solid #E0E8F0;border-radius:6px;padding:6px 2px;font-size:12px;font-family:inherit;text-align:center;color:#1a2332}
 .hyear-table input.sample{color:#94A3B8}
 .hyear-table input:focus{outline:none;border-color:#1A56A8}
-.hyear-del{background:none;border:1px solid #FECACA;border-radius:6px;color:#DC2626;font-size:11px;font-weight:700;cursor:pointer;padding:4px 8px;font-family:inherit;transition:.2s}
+.hyear-del{background:none;border:1px solid #FECACA;border-radius:6px;color:#DC2626;font-size:11px;font-weight:700;cursor:pointer;height:30px;padding:0 10px;font-family:inherit;transition:.2s}
 .hyear-del:hover{background:#DC2626;color:#fff}
+.hyear-sel{width:100%;border:1px solid #E0E8F0;border-radius:6px;padding:6px 22px 6px 8px;font-size:12px;font-weight:800;font-family:inherit;color:#0F2D57;background:#fff url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%2394A3B8' d='M1 1.5 6 6.5l5-5'/%3E%3C/svg%3E") no-repeat right 7px center/9px;-webkit-appearance:none;appearance:none;cursor:pointer;transition:.2s}
+.hyear-sel:hover{border-color:#93C5FD;background-color:#EFF6FF}
+.hyear-sel:focus{outline:none;border-color:#1A56A8;box-shadow:0 0 0 3px rgba(26,86,168,.12)}
+/* 연도 셀의 기간 표기(.hyear-span)와 동일한 높이의 여백을 값·삭제 셀에도 만들어 행 축을 맞춘다 */
+.hyear-span,.hyear-table td.hval::after{display:block;font-size:10px;line-height:1.4;margin-top:3px}
+.hyear-span{font-weight:400;color:#94A3B8}
+.hyear-table td.hval::after{content:"\00a0";visibility:hidden}
+.hyear-add{width:100%;background:#F8FAFC;border:1.5px dashed #CBD5E1;border-radius:8px;color:#475569;font-size:12px;font-weight:700;padding:10px;cursor:pointer;font-family:inherit;transition:.2s}
+.hyear-add:hover:not(:disabled){border-color:#1A56A8;background:#EFF6FF;color:#1A56A8}
+.hyear-add:disabled{opacity:.5;cursor:not-allowed}
 .hsample-note{background:#F0F9FF;border:1px solid #BAE6FD;color:#0369A1;font-size:11px;padding:8px 12px;border-radius:8px;margin-bottom:14px;line-height:1.6}
 .print-only{display:none}
 @media print{
@@ -349,6 +359,8 @@ const HIST_RATES={
   }
 };
 
+const HY_MIN=2010, HY_MAX=new Date().getFullYear()+5;
+
 const SAMPLE_HIST_RATES=JSON.parse(JSON.stringify(HIST_RATES));
 function isSampleVal(type,y,field){
   const s=SAMPLE_HIST_RATES[type][y];
@@ -372,7 +384,9 @@ function getRate(year){
   return RATES[cType];
 }
 function calcFees(tot,dem,oth,year){
-  const r=getRate(year),s=tot*r.single,t=dem*r.demand+oth*r.other,d=s-t;
+  const rh=getRate(year),cur=RATES[cType];
+  const r={single:rh.single??cur.single,demand:rh.demand??cur.demand,other:rh.other??cur.other};
+  const s=tot*r.single,t=dem*r.demand+oth*r.other,d=s-t;
   return{s,t,sav:Math.abs(d),w:d>0.01?'t':d<-0.01?'s':'e'};
 }
 function sumFees(arr){
@@ -461,24 +475,46 @@ function switchHistTab(t){
   document.getElementById('htab-pub').classList.toggle('on',t==='pub');
   renderHistTable();
 }
+function histYears(){return Object.keys(HIST_RATES[hTab]).map(Number).sort((a,b)=>b-a);}
+
 function renderHistTable(){
-  const years=Object.keys(HIST_RATES[hTab]).map(Number).sort((a,b)=>b-a);
+  const years=histYears();
+  const used=new Set(years);
   const sc=(y,f)=>isSampleVal(hTab,y,f)?' class="sample"':'';
+  const opts=y=>{
+    let o='';
+    for(let c=HY_MAX;c>=HY_MIN;c--){
+      if(c!==y&&used.has(c))continue;
+      o+=`<option value="${c}"${c===y?' selected':''}>'${String(c).slice(-2)} 동절기</option>`;
+    }
+    return o;
+  };
   const rows=years.map(y=>`
     <tr>
-      <td style="font-weight:800;color:#0F2D57">'${String(y).slice(-2)} 동절기<div style="font-weight:400;color:#94A3B8;font-size:10px">(${y}.12~${y+1}.2)</div></td>
-      <td><input type="number" step="0.01" min="0"${sc(y,'single')} value="${HIST_RATES[hTab][y].single}" onchange="updHistVal(${y},'single',this.value)"></td>
-      <td><input type="number" step="0.01" min="0"${sc(y,'demand')} value="${HIST_RATES[hTab][y].demand}" onchange="updHistVal(${y},'demand',this.value)"></td>
-      <td><input type="number" step="0.01" min="0"${sc(y,'other')} value="${HIST_RATES[hTab][y].other}" onchange="updHistVal(${y},'other',this.value)"></td>
-      <td><button class="hyear-del" onclick="removeHistYear(${y})">✕</button></td>
+      <td>
+        <select class="hyear-sel" onchange="changeHistYear(${y},this.value)">${opts(y)}</select>
+        <div class="hyear-span">(${y}.12~${y+1}.2)</div>
+      </td>
+      <td class="hval"><input type="number" step="0.01" min="0"${sc(y,'single')} value="${HIST_RATES[hTab][y].single??''}" placeholder="입력" onchange="updHistVal(${y},'single',this.value)"></td>
+      <td class="hval"><input type="number" step="0.01" min="0"${sc(y,'demand')} value="${HIST_RATES[hTab][y].demand??''}" placeholder="입력" onchange="updHistVal(${y},'demand',this.value)"></td>
+      <td class="hval"><input type="number" step="0.01" min="0"${sc(y,'other')} value="${HIST_RATES[hTab][y].other??''}" placeholder="입력" onchange="updHistVal(${y},'other',this.value)"></td>
+      <td class="hval"><button class="hyear-del" onclick="removeHistYear(${y})">✕</button></td>
     </tr>`).join('');
+  const full=years.length>=(HY_MAX-HY_MIN+1);
   document.getElementById('hyear-body').innerHTML=`
     <table class="hyear-table">
       <thead><tr><th>동절기</th><th>단일요금</th><th>수요관리</th><th>수요관리 이외 시간대</th><th></th></tr></thead>
       <tbody>${rows||'<tr><td colspan="5" style="color:#94A3B8;padding:16px">등록된 연도가 없습니다</td></tr>'}</tbody>
-    </table>`;
+    </table>
+    <button class="hyear-add" onclick="addHistYear()"${full?' disabled':''}>${full?'추가할 수 있는 연도가 없습니다':'＋ 연도 추가'}</button>`;
 }
 function updHistVal(y,field,v){
+  if(v===''){
+    HIST_RATES[hTab][y][field]=null;
+    renderHistTable();
+    if(histMode&&mData.length)renderAll();
+    return;
+  }
   const n=parseFloat(v);
   if(isNaN(n)||n<0)return;
   HIST_RATES[hTab][y][field]=n;
@@ -488,6 +524,35 @@ function updHistVal(y,field,v){
 function removeHistYear(y){
   delete HIST_RATES.biz[y];
   delete HIST_RATES.pub[y];
+  renderHistTable();
+  if(histMode&&mData.length)renderAll();
+}
+function changeHistYear(oldY,newY){
+  oldY=Number(oldY); newY=Number(newY);
+  if(oldY===newY)return;
+  if(HIST_RATES[hTab][newY]){renderHistTable();return;}
+  for(const t of ['biz','pub']){
+    if(!HIST_RATES[t][oldY])continue;
+    HIST_RATES[t][newY]=HIST_RATES[t][oldY];
+    delete HIST_RATES[t][oldY];
+  }
+  renderHistTable();
+  if(histMode&&mData.length)renderAll();
+}
+function addHistYear(){
+  const used=Object.keys(HIST_RATES[hTab]).map(Number);
+  let y=null;
+  if(!used.length)y=new Date().getFullYear();
+  else{
+    const lo=Math.min(...used)-1, hi=Math.max(...used)+1;
+    if(lo>=HY_MIN)y=lo;
+    else if(hi<=HY_MAX)y=hi;
+    else for(let c=HY_MAX;c>=HY_MIN;c--)if(!used.includes(c)){y=c;break;}
+  }
+  if(y===null)return;
+  for(const t of ['biz','pub']){
+    HIST_RATES[t][y]={single:null,demand:null,other:null,label:RATES[t].label,basic:RATES[t].basic};
+  }
   renderHistTable();
   if(histMode&&mData.length)renderAll();
 }
@@ -523,7 +588,7 @@ function parseFileRecords(buf){
     const y=+ds.slice(0,4),mo=+ds.slice(4,6),d=+ds.slice(6,8);
     if(![12,1,2].includes(mo))continue;
     const hm=String(row[ti]||'').match(/(\d+)/); if(!hm)continue;
-    const h=+hm[1]; if(h<0||h>23)continue;
+    const h=+hm[1]; if(h<0||h>24)continue;
     const v=parseFloat(row[hi]); if(isNaN(v))continue;
     recs.push({y,mo,d,h,v,ds});
   }
@@ -545,7 +610,14 @@ function processAllFiles(){
     if(i===0){all[i].mc=0;continue;}
     const p=all[i-1],c=all[i];
     const pd=new Date(p.y,p.mo-1,p.d,p.h),cd=new Date(c.y,c.mo-1,c.d,c.h);
-    all[i].mc=(cd-pd)===3600000?Math.max(0,(c.v-p.v)*1000):0;
+    if((cd-pd)===3600000){
+      const diff=c.v-p.v;
+      // 지침값이 튀었다가 돌아오는 경우 마이너스를 그대로 반영해 상쇄(스파이크 보정).
+      // 단, 하락폭이 직전 검침량의 절반 이상이면 계량기 교체(0부터 재시작)로 보고 0 처리.
+      all[i].mc=(diff<0&&Math.abs(diff)>=p.v*0.5)?0:diff*1000;
+    }else{
+      all[i].mc=0;
+    }
   }
   const mMap={};
   for(const r of all){
