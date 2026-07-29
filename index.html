@@ -53,6 +53,10 @@ body{font-family:'Malgun Gothic','맑은 고딕',Apple SD Gothic Neo,sans-serif;
 .gapwarn.on{display:block}
 .gapwarn ul{margin:6px 0 0;padding-left:18px;font-weight:400}
 .gapwarn li{padding:1px 0}
+.nullerr{background:#FFF1F2;border:1px solid #FECDD3;color:#991B1B;border-radius:8px;padding:11px 16px;margin-top:10px;font-size:12.5px;font-weight:600;display:none}
+.nullerr.on{display:block}
+.nullerr ul{margin:6px 0;padding-left:18px;font-weight:400}
+.nullerr li{padding:1px 0}
 .uinfo{background:#F0F9FF;border:1px solid #BAE6FD;border-radius:8px;padding:12px 16px;margin-top:14px}
 .uinfo li{font-size:12px;color:#0369A1;padding:2px 0;list-style:none}
 .uinfo li::before{content:"• "}
@@ -308,6 +312,7 @@ tbody tr.ttr td.tl{background:#FECDD3!important}
     </div>
     <div class="flist" id="flist"></div>
     <div class="ustatus" id="ust"></div>
+    <div class="nullerr" id="unullerr"></div>
     <div class="gapwarn" id="ugapwarn"></div>
     <ul class="uinfo">
       <li>필수 컬럼: 날짜(YYYYMMDD), 시간(N시), 열지침량(Gcal) — 열 순서가 바뀌어도 헤더 이름으로 자동 인식</li>
@@ -586,6 +591,7 @@ function parseFileRecords(buf){
     throw new Error(`필수 헤더를 찾을 수 없습니다: [${miss.join(', ')}]`);
   }
   const recs=[];
+  const quality={}; // 월별 데이터 품질: {rows: 전체 행 수, nul: 열지침량 누락 행 수}
   for(let i=1;i<rows.length;i++){
     const row=rows[i]; if(!row)continue;
     const ds=String(row[di]||'').replace(/\D/g,'');
@@ -594,20 +600,52 @@ function parseFileRecords(buf){
     if(![12,1,2].includes(mo))continue;
     const hm=String(row[ti]||'').match(/(\d+)/); if(!hm)continue;
     const h=+hm[1]; if(h<0||h>24)continue;
-    const v=parseFloat(row[hi]); if(isNaN(v))continue;
+    const mk=`${y}-${String(mo).padStart(2,'0')}`;
+    if(!quality[mk])quality[mk]={y,mo,k:mk,rows:0,nul:0};
+    quality[mk].rows++;
+    const v=parseFloat(row[hi]);
+    if(isNaN(v)){quality[mk].nul++;continue;} // "null"·빈칸 등 숫자로 읽히지 않는 값
     recs.push({y,mo,d,h,v,ds});
   }
-  return recs;
+  return {recs,quality};
 }
 
 function processAllFiles(){
   if(!uploadedFiles.length){clearResults();return;}
   let all=[];
+  const mQual={}; // 월별 데이터 품질 집계(여러 파일 합산)
   for(const f of uploadedFiles){
-    try{all=all.concat(parseFileRecords(f.buf));}
+    try{
+      const {recs,quality}=parseFileRecords(f.buf);
+      all=all.concat(recs);
+      for(const [k,q] of Object.entries(quality)){
+        if(!mQual[k])mQual[k]={y:q.y,mo:q.mo,k,rows:0,nul:0};
+        mQual[k].rows+=q.rows; mQual[k].nul+=q.nul;
+      }
+    }
     catch(e){console.warn('parse error',f.name,e);}
   }
-  if(!all.length){showErr('유효한 12~2월 데이터를 찾을 수 없습니다.');clearResults();return;}
+  // 월별 누락 비율로 계산 가능 여부를 판정한다.
+  const NUL_FATAL=0.5, NUL_WARN=0.05;
+  const badMonths=[], warnMonths=[];
+  for(const q of Object.values(mQual)){
+    q.ratio=q.rows?q.nul/q.rows:1;
+    q.valid=q.rows-q.nul;
+    if(q.valid<2||q.ratio>=NUL_FATAL)badMonths.push(q);
+    else if(q.ratio>=NUL_WARN)warnMonths.push(q);
+  }
+  const badKeys=new Set(badMonths.map(q=>q.k));
+  // 계산 불가능한 달의 레코드는 아예 제외해, 남은 조각이 다른 달로 보간되지 않도록 한다.
+  if(badKeys.size)all=all.filter(r=>!badKeys.has(`${r.y}-${String(r.mo).padStart(2,'0')}`));
+  const sortQ=a=>a.sort((x,y)=>x.k.localeCompare(y.k));
+  sortQ(badMonths); sortQ(warnMonths);
+  const mLabel=q=>`${q.y}년 ${q.mo}월`;
+  if(!all.length){
+    showErr(badMonths.length
+      ?`데이터 누락이 심해 계산할 수 없습니다 — ${badMonths.map(q=>`${mLabel(q)}(누락 ${(q.ratio*100).toFixed(0)}%)`).join(', ')}. 열지침량이 채워진 파일로 다시 업로드해 주세요.`
+      :'유효한 12~2월 데이터를 찾을 수 없습니다.');
+    clearResults();return;
+  }
   const seen=new Set();
   all=all.filter(r=>{const k=`${r.ds}-${r.h}`;if(seen.has(k))return false;seen.add(k);return true;});
   all.sort((a,b)=>+a.ds*100+a.h-(+b.ds*100+b.h));
@@ -659,9 +697,25 @@ function processAllFiles(){
   renderAll();
   const st=document.getElementById('ust');
   st.className='ustatus ok';
-  st.innerHTML=`✅ 총 ${uploadedFiles.length}개 파일 분석 완료 — ${mData.length}개월, ${sData.length}개 동절기 데이터`;
+  st.innerHTML=`✅ 총 ${uploadedFiles.length}개 파일 분석 완료 — ${mData.length}개월, ${sData.length}개 동절기 데이터`
+    +(badMonths.length?` <span style="color:#991B1B">(${badMonths.length}개월 제외됨)</span>`:'');
+
+  // 계산에서 제외된 달은 붉은 오류 배너로 따로 알린다.
+  const ge=document.getElementById('unullerr');
+  if(badMonths.length){
+    const li=badMonths.map(q=>`<li><b>${mLabel(q)}</b> — ${q.rows}개 시간 중 ${q.nul}개 누락 (${(q.ratio*100).toFixed(0)}%)${q.valid<2?' · 계산에 필요한 최소 데이터 없음':''}</li>`).join('');
+    ge.className='nullerr on';
+    ge.innerHTML=`❌ 열지침량이 비어 있어 <b>계산할 수 없는 달</b>이 있습니다. 아래 ${badMonths.length}개월은 결과에서 제외했습니다.<ul>${li}</ul>해당 월의 열지침량이 채워진 파일로 다시 업로드하면 함께 계산됩니다.`;
+  }else{
+    ge.className='nullerr'; ge.innerHTML='';
+  }
 
   const gw=document.getElementById('ugapwarn');
+  const parts=[];
+  if(warnMonths.length){
+    const li=warnMonths.map(q=>`<li>${mLabel(q)} — ${q.rows}개 시간 중 ${q.nul}개 누락 (${(q.ratio*100).toFixed(0)}%)</li>`).join('');
+    parts.push(`⚠️ 누락된 열지침량이 많아 <b>계산이 부정확할 수 있는 달</b>이 있습니다. 빈 구간은 앞뒤 지침값으로 보간해 계산에 포함했습니다.<ul>${li}</ul>`);
+  }
   if(demandGaps.length){
     const byDay={};
     demandGaps.forEach(g=>{
@@ -671,8 +725,11 @@ function processAllFiles(){
     });
     const items=Object.values(byDay).sort((a,b)=>(a.y*10000+a.mo*100+a.d)-(b.y*10000+b.mo*100+b.d));
     const li=items.map(g=>`<li>${g.y}.${String(g.mo).padStart(2,'0')}.${String(g.d).padStart(2,'0')} — ${[...g.hs].sort((a,b)=>a-b).map(h=>h+'시').join(', ')}</li>`).join('');
+    parts.push(`⚠️ 보간한 구간 중 <b>수요관리시간대(07~10시)</b>에 걸친 날짜가 ${items.length}건 있어 실제 요금과 다소 차이가 날 수 있습니다.<ul>${li}</ul>`);
+  }
+  if(parts.length){
     gw.className='gapwarn on';
-    gw.innerHTML=`⚠️ 원본 데이터에 빈 값(공백)이 있어 앞뒤 지침값으로 균등 보간했습니다. 그중 <b>수요관리시간대(07~10시)</b>에 걸친 날짜가 ${items.length}건 있어 실제 요금과 다소 차이가 날 수 있습니다.<ul>${li}</ul>`;
+    gw.innerHTML=parts.join('<div style="height:8px"></div>');
   }else{
     gw.className='gapwarn';
     gw.innerHTML='';
@@ -686,11 +743,13 @@ function clearResults(){
   if(!uploadedFiles.length){
     const st=document.getElementById('ust');st.className='ustatus';st.innerHTML='';
     const gw=document.getElementById('ugapwarn');gw.className='gapwarn';gw.innerHTML='';
+    const ge=document.getElementById('unullerr');ge.className='nullerr';ge.innerHTML='';
   }
 }
 function showErr(msg){
   const st=document.getElementById('ust');st.className='ustatus err';st.innerHTML='❌ '+msg;
   const gw=document.getElementById('ugapwarn');gw.className='gapwarn';gw.innerHTML='';
+  const ge=document.getElementById('unullerr');ge.className='nullerr';ge.innerHTML='';
 }
 
 function updateFileList(){
